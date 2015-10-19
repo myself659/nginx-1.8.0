@@ -80,14 +80,14 @@ ngx_conf_param(ngx_conf_t *cf)
     b.pos = param->data;
     b.last = param->data + param->len;
     b.end = b.last;
-    b.temporary = 1;
+    b.temporary = 1;  
 
     conf_file.file.fd = NGX_INVALID_FILE;
     conf_file.file.name.data = NULL;
     conf_file.line = 0;
 
     cf->conf_file = &conf_file;
-    cf->conf_file->buffer = &b;
+    cf->conf_file->buffer = &b;  /*  */
 
     rv = ngx_conf_parse(cf, NULL);
 
@@ -96,15 +96,18 @@ ngx_conf_param(ngx_conf_t *cf)
     return rv;
 }
 
-
+/*  配置信息解析 */
 char *
 ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 {
     char             *rv;
+    u_char           *p;
+    off_t             size;
     ngx_fd_t          fd;
     ngx_int_t         rc;
-    ngx_buf_t         buf;
+    ngx_buf_t         buf, *tbuf;
     ngx_conf_file_t  *prev, conf_file;
+    ngx_conf_dump_t  *cd;
     enum {
         parse_file = 0,
         parse_block,
@@ -157,6 +160,39 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         cf->conf_file->line = 1;
 
         type = parse_file;
+
+        if (ngx_dump_config
+#if (NGX_DEBUG)
+            || 1
+#endif
+           )
+        {
+            p = ngx_pstrdup(cf->cycle->pool, filename);
+            if (p == NULL) {
+                goto failed;
+            }
+
+            size = ngx_file_size(&cf->conf_file->file.info);
+
+            tbuf = ngx_create_temp_buf(cf->cycle->pool, (size_t) size);
+            if (tbuf == NULL) {
+                goto failed;
+            }
+
+            cd = ngx_array_push(&cf->cycle->config_dump);
+            if (cd == NULL) {
+                goto failed;
+            }
+
+            cd->name.len = filename->len;
+            cd->name.data = p;
+            cd->buffer = tbuf;
+
+            cf->conf_file->dump = tbuf;
+
+        } else {
+            cf->conf_file->dump = NULL;
+        }
 
     } else if (cf->conf_file->file.fd != NGX_INVALID_FILE) {
 
@@ -229,6 +265,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
                 goto failed;
             }
 
+			/* 配置项hanle 进行处理 */
             rv = (*cf->handler)(cf, NULL, cf->handler_conf);
             if (rv == NGX_CONF_OK) {
                 continue;
@@ -279,7 +316,7 @@ done:
     return NGX_CONF_OK;
 }
 
-
+/* 配置处理 */
 static ngx_int_t
 ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 {
@@ -388,7 +425,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 }
             }
 
-            rv = cmd->set(cf, cmd, conf);
+            rv = cmd->set(cf, cmd, conf); /* 调用函数指针进行处理  */
 
             if (rv == NGX_CONF_OK) {
                 return NGX_OK;
@@ -426,7 +463,7 @@ invalid:
     return NGX_ERROR;
 }
 
-
+/* 读取token */
 static ngx_int_t
 ngx_conf_read_token(ngx_conf_t *cf)
 {
@@ -437,7 +474,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
     ngx_uint_t   found, need_space, last_space, sharp_comment, variable;
     ngx_uint_t   quoted, s_quoted, d_quoted, start_line;
     ngx_str_t   *word;
-    ngx_buf_t   *b;
+    ngx_buf_t   *b, *dump;
 
     found = 0;
     need_space = 0;
@@ -450,6 +487,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
     cf->args->nelts = 0;
     b = cf->conf_file->buffer;
+    dump = cf->conf_file->dump;
     start = b->pos;
     start_line = cf->conf_file->line;
 
@@ -531,6 +569,10 @@ ngx_conf_read_token(ngx_conf_t *cf)
             b->pos = b->start + len;
             b->last = b->pos + n;
             start = b->start;
+
+            if (dump) {
+                dump->last = ngx_cpymem(dump->last, b->pos, size);
+            }
         }
 
         ch = *b->pos++;
@@ -680,7 +722,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                     return NGX_ERROR;
                 }
 
-                word->data = ngx_pnalloc(cf->pool, b->pos - start + 1);
+                word->data = ngx_pnalloc(cf->pool, b->pos - 1 - start + 1);
                 if (word->data == NULL) {
                     return NGX_ERROR;
                 }
@@ -1120,20 +1162,21 @@ ngx_conf_set_size_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t        *value;
     ngx_conf_post_t  *post;
 
-
+	/* 指令项在配置项的数据结构的偏移 */
     sp = (size_t *) (p + cmd->offset);
     if (*sp != NGX_CONF_UNSET_SIZE) {
         return "is duplicate";
     }
 
     value = cf->args->elts;
-
+	/* 解析配置值 */
     *sp = ngx_parse_size(&value[1]);
     if (*sp == (size_t) NGX_ERROR) {
         return "invalid value";
     }
 
     if (cmd->post) {
+
         post = cmd->post;
         return post->post_handler(cf, post, sp);
     }

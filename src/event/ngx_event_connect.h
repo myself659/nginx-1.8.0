@@ -36,8 +36,8 @@ typedef void (*ngx_event_save_peer_session_pt)(ngx_peer_connection_t *pc,
 
 struct ngx_peer_connection_s {
     ngx_connection_t                *connection;
-
-    struct sockaddr                 *sockaddr;
+	/* 对端连接信息 */
+    struct sockaddr                 *sockaddr;  
     socklen_t                        socklen;
     ngx_str_t                       *name;
 
@@ -52,9 +52,9 @@ struct ngx_peer_connection_s {
     ngx_event_set_peer_session_pt    set_session;
     ngx_event_save_peer_session_pt   save_session;
 #endif
-
+	/* 本端地址信息 */
     ngx_addr_t                      *local;
-
+	/* SO_RCVBUF 选项信息 */
     int                              rcvbuf;
 
     ngx_log_t                       *log;

@@ -75,7 +75,7 @@
 
 #endif
 
-typedef intptr_t        ngx_int_t;
+typedef intptr_t        ngx_int_t;  //intptr_t类型是为指针准备的
 typedef uintptr_t       ngx_uint_t;
 typedef intptr_t        ngx_flag_t;
 

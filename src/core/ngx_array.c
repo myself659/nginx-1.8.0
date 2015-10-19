@@ -43,7 +43,7 @@ ngx_array_destroy(ngx_array_t *a)
     }
 }
 
-
+/* 将成员加入数组 */
 void *
 ngx_array_push(ngx_array_t *a)
 {

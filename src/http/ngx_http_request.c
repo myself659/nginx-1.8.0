@@ -76,7 +76,7 @@ static char *ngx_http_client_errors[] = {
     "client sent invalid method in HTTP/0.9 request"
 };
 
-
+/* */
 ngx_http_header_t  ngx_http_headers_in[] = {
     { ngx_string("Host"), offsetof(ngx_http_headers_in_t, host),
                  ngx_http_process_host },
@@ -191,6 +191,7 @@ ngx_http_header_t  ngx_http_headers_in[] = {
 };
 
 
+/* 初始化http连接 */
 void
 ngx_http_init_connection(ngx_connection_t *c)
 {
@@ -309,7 +310,7 @@ ngx_http_init_connection(ngx_connection_t *c)
     c->log_error = NGX_ERROR_INFO;
 
     rev = c->read;
-    rev->handler = ngx_http_wait_request_handler;
+    rev->handler = ngx_http_wait_request_handler; /* 初始化connet,设置接收handle为ngx_http_wait_request_handler */
     c->write->handler = ngx_http_empty_handler;
 
 #if (NGX_HTTP_SPDY)
@@ -349,7 +350,7 @@ ngx_http_init_connection(ngx_connection_t *c)
     }
 
     if (rev->ready) {
-        /* the deferred accept(), rtsig, aio, iocp */
+        /* the deferred accept(), iocp */
 
         if (ngx_use_accept_mutex) {
             ngx_post_event(rev, &ngx_posted_events);
@@ -370,6 +371,7 @@ ngx_http_init_connection(ngx_connection_t *c)
 }
 
 
+/*  连接接收处理handler  */
 static void
 ngx_http_wait_request_handler(ngx_event_t *rev)
 {
@@ -425,6 +427,7 @@ ngx_http_wait_request_handler(ngx_event_t *rev)
         b->end = b->last + size;
     }
 
+	/* ngx_unix_rcv */
     n = c->recv(c, b->last, size);
 
     if (n == NGX_AGAIN) {
@@ -462,12 +465,12 @@ ngx_http_wait_request_handler(ngx_event_t *rev)
         return;
     }
 
-    b->last += n;
+    b->last += n; /* 接收缓冲区后移 */
 
     if (hc->proxy_protocol) {
         hc->proxy_protocol = 0;
 
-        p = ngx_proxy_protocol_parse(c, b->pos, b->last);
+        p = ngx_proxy_protocol_read(c, b->pos, b->last);
 
         if (p == NULL) {
             ngx_http_close_connection(c);
@@ -495,11 +498,11 @@ ngx_http_wait_request_handler(ngx_event_t *rev)
         return;
     }
 
-    rev->handler = ngx_http_process_request_line;
+    rev->handler = ngx_http_process_request_line; /* 已经接收到http请求，后续处理request */
     ngx_http_process_request_line(rev);
 }
 
-
+/* 创建http request 及初始化 */
 ngx_http_request_t *
 ngx_http_create_request(ngx_connection_t *c)
 {
@@ -543,7 +546,7 @@ ngx_http_create_request(ngx_connection_t *c)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-    ngx_http_set_connection_log(r->connection, clcf->error_log);
+    ngx_set_connection_log(r->connection, clcf->error_log);
 
     r->header_in = hc->nbusy ? hc->busy[0] : c->buffer;
 
@@ -675,7 +678,7 @@ ngx_http_ssl_handshake(ngx_event_t *rev)
     if (hc->proxy_protocol) {
         hc->proxy_protocol = 0;
 
-        p = ngx_proxy_protocol_parse(c, buf, buf + n);
+        p = ngx_proxy_protocol_read(c, buf, buf + n);
 
         if (p == NULL) {
             ngx_http_close_connection(c);
@@ -867,7 +870,7 @@ ngx_http_ssl_servername(ngx_ssl_conn_t *ssl_conn, int *ad, void *arg)
 
     clcf = ngx_http_get_module_loc_conf(hc->conf_ctx, ngx_http_core_module);
 
-    ngx_http_set_connection_log(c, clcf->error_log);
+    ngx_set_connection_log(c, clcf->error_log);
 
     sscf = ngx_http_get_module_srv_conf(hc->conf_ctx, ngx_http_ssl_module);
 
@@ -900,7 +903,7 @@ ngx_http_ssl_servername(ngx_ssl_conn_t *ssl_conn, int *ad, void *arg)
 
 #endif
 
-
+/*  http 处理请求行  */
 static void
 ngx_http_process_request_line(ngx_event_t *rev)
 {
@@ -1353,7 +1356,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
     }
 }
 
-
+/* 读取http请求头到head_in 缓冲区 */
 static ssize_t
 ngx_http_read_request_header(ngx_http_request_t *r)
 {
@@ -2073,7 +2076,7 @@ ngx_http_set_virtual_server(ngx_http_request_t *r, ngx_str_t *host)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-    ngx_http_set_connection_log(r->connection, clcf->error_log);
+    ngx_set_connection_log(r->connection, clcf->error_log);
 
     return NGX_OK;
 }
@@ -3583,6 +3586,10 @@ ngx_http_log_error(ngx_log_t *log, u_char *buf, size_t len)
 }
 
 
+/*
+提供log功能，方便问题定位，log信息包括下面:
+
+*/
 static u_char *
 ngx_http_log_error_handler(ngx_http_request_t *r, ngx_http_request_t *sr,
     u_char *buf, size_t len)

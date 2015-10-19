@@ -68,10 +68,10 @@ ngx_module_t  ngx_errlog_module = {
 
 
 static ngx_log_t        ngx_log;
-static ngx_open_file_t  ngx_log_file;
+static ngx_open_file_t  ngx_log_file; 	/* logfile 文件信息 */
 ngx_uint_t              ngx_use_stderr = 1;
 
-
+/* debug log信息分为类型与等级 */
 static ngx_str_t err_levels[] = {
     ngx_null_string,
     ngx_string("emerg"),
@@ -86,7 +86,7 @@ static ngx_str_t err_levels[] = {
 
 static const char *debug_levels[] = {
     "debug_core", "debug_alloc", "debug_mutex", "debug_event",
-    "debug_http", "debug_mail", "debug_mysql"
+    "debug_http", "debug_mail", "debug_mysql", "debug_stream"
 };
 
 
@@ -333,7 +333,7 @@ ngx_log_init(u_char *prefix)
     nlen = ngx_strlen(name);
 
     if (nlen == 0) {
-        ngx_log_file.fd = ngx_stderr;
+        ngx_log_file.fd = ngx_stderr; /* 如果没有指令log，将log重定向到标准错误输出 */
         return &ngx_log;
     }
 
@@ -609,7 +609,7 @@ ngx_log_set_log(ngx_conf_t *cf, ngx_log_t **head)
             return NGX_CONF_ERROR;
         }
 
-        buf = ngx_palloc(cf->pool, sizeof(ngx_log_memory_buf_t));
+        buf = ngx_pcalloc(cf->pool, sizeof(ngx_log_memory_buf_t));
         if (buf == NULL) {
             return NGX_CONF_ERROR;
         }

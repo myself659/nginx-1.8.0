@@ -26,15 +26,15 @@ typedef struct {
 
 #endif
 
-
+/* 事件通知  */
 struct ngx_event_s {
-    void            *data;
+    void            *data;  /* 事件上下文数据，事件关联数据,如果连接事件，则为ngx_connet_t */
 
     unsigned         write:1;
 
     unsigned         accept:1;
 
-    /* used to detect the stale events in kqueue, rtsig, and epoll */
+    /* used to detect the stale events in kqueue and epoll */
     unsigned         instance:1;
 
     /*
@@ -48,16 +48,16 @@ struct ngx_event_s {
     /* the ready event; in aio mode 0 means that no operation can be posted */
     unsigned         ready:1;
 
-    unsigned         oneshot:1;
+    unsigned         oneshot:1; /* edge poll */
 
     /* aio operation is complete */
     unsigned         complete:1;
 
     unsigned         eof:1;
-    unsigned         error:1;
+    unsigned         error:1; /* 置1表示发生错误 */
 
-    unsigned         timedout:1;
-    unsigned         timer_set:1;
+    unsigned         timedout:1; /* 置1表示等待超时 */
+    unsigned         timer_set:1; /* 置1表示已设置定时器 */
 
     unsigned         delayed:1;
 
@@ -67,6 +67,14 @@ struct ngx_event_s {
     unsigned         pending_eof:1;
 
     unsigned         posted:1;
+
+    unsigned         closed:1;
+
+    /* to test on worker exit */
+    unsigned         channel:1;
+    unsigned         resolver:1;
+	/* 置1表示支持取消定时器 */
+    unsigned         cancelable:1;
 
 #if (NGX_WIN32)
     /* setsockopt(SO_UPDATE_ACCEPT_CONTEXT) was successful */
@@ -100,36 +108,22 @@ struct ngx_event_s {
     unsigned         available:1;
 #endif
 
-    ngx_event_handler_pt  handler;
+    ngx_event_handler_pt  handler;  /* 事件回调函数 */
 
-
-#if (NGX_HAVE_AIO)
 
 #if (NGX_HAVE_IOCP)
     ngx_event_ovlp_t ovlp;
-#else
-    struct aiocb     aiocb;
-#endif
-
 #endif
 
     ngx_uint_t       index;
 
     ngx_log_t       *log;
-
+    
+	/*定时器rb节点  */
     ngx_rbtree_node_t   timer;
 
     /* the posted queue */
     ngx_queue_t      queue;
-
-    unsigned         closed:1;
-
-    /* to test on worker exit */
-    unsigned         channel:1;
-    unsigned         resolver:1;
-
-    unsigned         cancelable:1;
-
 
 #if 0
 
@@ -181,7 +175,7 @@ struct ngx_event_aio_s {
 
 #endif
 
-
+/* 事件类型处理函数指针  */
 typedef struct {
     ngx_int_t  (*add)(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags);
     ngx_int_t  (*del)(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags);
@@ -236,7 +230,7 @@ extern ngx_event_actions_t   ngx_event_actions;
 #define NGX_USE_LOWAT_EVENT      0x00000010
 
 /*
- * The event filter requires to do i/o operation until EAGAIN: epoll, rtsig.
+ * The event filter requires to do i/o operation until EAGAIN: epoll.
  */
 #define NGX_USE_GREEDY_EVENT     0x00000020
 
@@ -246,25 +240,23 @@ extern ngx_event_actions_t   ngx_event_actions;
 #define NGX_USE_EPOLL_EVENT      0x00000040
 
 /*
- * No need to add or delete the event filters: rtsig.
+ * Obsolete.
  */
 #define NGX_USE_RTSIG_EVENT      0x00000080
 
 /*
- * No need to add or delete the event filters: overlapped, aio_read,
- * aioread, io_submit.
+ * Obsolete.
  */
 #define NGX_USE_AIO_EVENT        0x00000100
 
 /*
  * Need to add socket or handle only once: i/o completion port.
- * It also requires NGX_HAVE_AIO and NGX_USE_AIO_EVENT to be set.
  */
 #define NGX_USE_IOCP_EVENT       0x00000200
 
 /*
  * The event filter has no opaque data and requires file descriptors table:
- * poll, /dev/poll, rtsig.
+ * poll, /dev/poll.
  */
 #define NGX_USE_FD_EVENT         0x00000400
 
@@ -289,7 +281,7 @@ extern ngx_event_actions_t   ngx_event_actions;
 /*
  * The event filter is deleted just before the closing file.
  * Has no meaning for select and poll.
- * kqueue, epoll, rtsig, eventport:  allows to avoid explicit delete,
+ * kqueue, epoll, eventport:         allows to avoid explicit delete,
  *                                   because filter automatically is deleted
  *                                   on file close,
  *
@@ -405,7 +397,7 @@ extern ngx_event_actions_t   ngx_event_actions;
 #define NGX_CLEAR_EVENT    0    /* dummy declaration */
 #endif
 
-
+/* 只关注unix  ngx_epoll_module_ctx  */
 #define ngx_process_events   ngx_event_actions.process_events
 #define ngx_done_events      ngx_event_actions.done
 
@@ -426,7 +418,7 @@ extern ngx_os_io_t  ngx_io;
 #define ngx_recv_chain       ngx_io.recv_chain
 #define ngx_udp_recv         ngx_io.udp_recv
 #define ngx_send             ngx_io.send
-#define ngx_send_chain       ngx_io.send_chain
+#define ngx_send_chain       ngx_io.send_chain    /* ngx_writev_chain */
 
 
 #define NGX_EVENT_MODULE      0x544E5645  /* "EVNT" */

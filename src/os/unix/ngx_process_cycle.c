@@ -29,16 +29,17 @@ static void ngx_cache_loader_process_handler(ngx_event_t *ev);
 
 
 ngx_uint_t    ngx_process;
+ngx_uint_t    ngx_worker;
 ngx_pid_t     ngx_pid;
 
 sig_atomic_t  ngx_reap;
 sig_atomic_t  ngx_sigio;
 sig_atomic_t  ngx_sigalrm;
-sig_atomic_t  ngx_terminate;
+sig_atomic_t  ngx_terminate; /* 进程是否被终止 */
 sig_atomic_t  ngx_quit;
 sig_atomic_t  ngx_debug_quit;
-ngx_uint_t    ngx_exiting;
-sig_atomic_t  ngx_reconfigure;
+ngx_uint_t    ngx_exiting; /* 进程是否正在退出 */
+sig_atomic_t  ngx_reconfigure; /* 重新配置 */
 sig_atomic_t  ngx_reopen;
 
 sig_atomic_t  ngx_change_binary;
@@ -159,7 +160,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "sigsuspend");
 
-        sigsuspend(&set);
+        sigsuspend(&set); /* 等待信号 */
 
         ngx_time_update();
 
@@ -339,7 +340,7 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)
     }
 }
 
-
+/* 启动工作线程 */
 static void
 ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t n, ngx_int_t type)
 {
@@ -722,6 +723,7 @@ ngx_master_process_exit(ngx_cycle_t *cycle)
 }
 
 
+/* 工作线程处理 */
 static void
 ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 {
@@ -731,6 +733,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
     ngx_connection_t  *c;
 
     ngx_process = NGX_PROCESS_WORKER;
+    ngx_worker = worker;
 
     ngx_worker_process_init(cycle, worker);
 
@@ -839,19 +842,6 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_int_t worker)
                           ccf->rlimit_core);
         }
     }
-
-#ifdef RLIMIT_SIGPENDING
-    if (ccf->rlimit_sigpending != NGX_CONF_UNSET) {
-        rlmt.rlim_cur = (rlim_t) ccf->rlimit_sigpending;
-        rlmt.rlim_max = (rlim_t) ccf->rlimit_sigpending;
-
-        if (setrlimit(RLIMIT_SIGPENDING, &rlmt) == -1) {
-            ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
-                          "setrlimit(RLIMIT_SIGPENDING, %i) failed",
-                          ccf->rlimit_sigpending);
-        }
-    }
-#endif
 
     if (geteuid() == 0) {
         if (setgid(ccf->group) == -1) {
@@ -1089,14 +1079,14 @@ ngx_channel_handler(ngx_event_t *ev)
             ngx_reopen = 1;
             break;
 
-        case NGX_CMD_OPEN_CHANNEL:
+        case NGX_CMD_OPEN_CHANNEL: /* 打开通道命令 */
 
             ngx_log_debug3(NGX_LOG_DEBUG_CORE, ev->log, 0,
                            "get channel s:%i pid:%P fd:%d",
                            ch.slot, ch.pid, ch.fd);
 
             ngx_processes[ch.slot].pid = ch.pid;
-            ngx_processes[ch.slot].channel[0] = ch.fd;
+            ngx_processes[ch.slot].channel[0] = ch.fd;   /*  */
             break;
 
         case NGX_CMD_CLOSE_CHANNEL:

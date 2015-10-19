@@ -21,7 +21,7 @@
 #define NGX_TIME_SLOTS   64
 
 static ngx_uint_t        slot;
-static ngx_atomic_t      ngx_time_lock;
+static ngx_atomic_t      ngx_time_lock;  /* 并发情况下保护time相关数据 */
 
 volatile ngx_msec_t      ngx_current_msec;
 volatile ngx_time_t     *ngx_cached_time;
@@ -73,7 +73,7 @@ ngx_time_init(void)
     ngx_time_update();
 }
 
-
+/* 时间服务 */
 void
 ngx_time_update(void)
 {

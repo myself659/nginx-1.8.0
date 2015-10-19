@@ -66,7 +66,7 @@ static ngx_int_t ngx_http_add_addrs6(ngx_conf_t *cf, ngx_http_port_t *hport,
     ngx_http_conf_addr_t *addr);
 #endif
 
-ngx_uint_t   ngx_http_max_module;
+ngx_uint_t   ngx_http_max_module; /* http  module 计数 */
 
 
 ngx_http_output_header_filter_pt  ngx_http_top_header_filter;
@@ -88,7 +88,7 @@ static ngx_command_t  ngx_http_commands[] = {
       0,
       0,
       NULL },
-
+	
       ngx_null_command
 };
 
@@ -99,7 +99,7 @@ static ngx_core_module_t  ngx_http_module_ctx = {
     NULL
 };
 
-
+/* ngx模块化设计分析  */
 ngx_module_t  ngx_http_module = {
     NGX_MODULE_V1,
     &ngx_http_module_ctx,                  /* module context */
@@ -116,6 +116,16 @@ ngx_module_t  ngx_http_module = {
 };
 
 
+/*   
+ cf: 该参数里面保存里读取到的配置信息的原始字符串以及相关的一些信息。特别注意的是这个参数的
+args 字段是一个ngx_str_t 类型的数组，每个数组元素。该数组的首个元素是这个配置指令本身的字符
+串，第二个元素是首个参数，第三个元素是第二个参数，依次类推。
+ cmd: 这个配置指令对应的ngx_command_t 结构。
+conf: 就是定义的存储这个配置值的结构体，比如在上面展示的那个ngx_http_hello_loc_conf_t。当解
+析这个hello_string 变量的时候，传入的conf 就指向一个ngx_http_hello_loc_conf_t 类型的变量。
+用户在处理的时候可以使用类型转换，转换成自己知道的类型，再进行字段的赋值
+
+*/
 static char *
 ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -444,6 +454,7 @@ ngx_http_init_headers_in_hash(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 }
 
 
+/* 注册http 阶段处理函数 */
 static ngx_int_t
 ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 {
@@ -550,7 +561,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
         for (j = cmcf->phases[i].handlers.nelts - 1; j >=0; j--) {
             ph->checker = checker;
-            ph->handler = h[j];
+            ph->handler = h[j]; 	/* */
             ph->next = n;
             ph++;
         }
@@ -1220,7 +1231,7 @@ ngx_http_add_addresses(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 {
     u_char                *p;
     size_t                 len, off;
-    ngx_uint_t             i, default_server;
+    ngx_uint_t             i, default_server, proxy_protocol;
     struct sockaddr       *sa;
     ngx_http_conf_addr_t  *addr;
 #if (NGX_HAVE_UNIX_DOMAIN)
@@ -1281,6 +1292,8 @@ ngx_http_add_addresses(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         /* preserve default_server bit during listen options overwriting */
         default_server = addr[i].opt.default_server;
 
+        proxy_protocol = lsopt->proxy_protocol || addr[i].opt.proxy_protocol;
+
 #if (NGX_HTTP_SSL)
         ssl = lsopt->ssl || addr[i].opt.ssl;
 #endif
@@ -1314,6 +1327,7 @@ ngx_http_add_addresses(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         }
 
         addr[i].opt.default_server = default_server;
+        addr[i].opt.proxy_protocol = proxy_protocol;
 #if (NGX_HTTP_SSL)
         addr[i].opt.ssl = ssl;
 #endif
@@ -1716,13 +1730,7 @@ ngx_http_init_listening(ngx_conf_t *cf, ngx_http_conf_port_t *port)
 
         ls->servers = hport;
 
-        if (i == last - 1) {
-            hport->naddrs = last;
-
-        } else {
-            hport->naddrs = 1;
-            i = 0;
-        }
+        hport->naddrs = i + 1;
 
         switch (ls->sockaddr->sa_family) {
 
@@ -1738,6 +1746,10 @@ ngx_http_init_listening(ngx_conf_t *cf, ngx_http_conf_port_t *port)
                 return NGX_ERROR;
             }
             break;
+        }
+
+        if (ngx_clone_listening(cf, ls) != NGX_OK) {
+            return NGX_ERROR;
         }
 
         addr++;
@@ -1762,7 +1774,7 @@ ngx_http_add_listening(ngx_conf_t *cf, ngx_http_conf_addr_t *addr)
 
     ls->addr_ntop = 1;
 
-    ls->handler = ngx_http_init_connection;
+    ls->handler = ngx_http_init_connection; /* 侦听处理函数 */
 
     cscf = addr->default_server;
     ls->pool_size = cscf->connection_pool_size;
@@ -1816,6 +1828,10 @@ ngx_http_add_listening(ngx_conf_t *cf, ngx_http_conf_addr_t *addr)
 
 #if (NGX_HAVE_TCP_FASTOPEN)
     ls->fastopen = addr->opt.fastopen;
+#endif
+
+#if (NGX_HAVE_REUSEPORT)
+    ls->reuseport = addr->opt.reuseport;
 #endif
 
     return ls;

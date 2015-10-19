@@ -126,9 +126,9 @@ static void ngx_epoll_eventfd_handler(ngx_event_t *ev);
 static void *ngx_epoll_create_conf(ngx_cycle_t *cycle);
 static char *ngx_epoll_init_conf(ngx_cycle_t *cycle, void *conf);
 
-static int                  ep = -1;
-static struct epoll_event  *event_list;
-static ngx_uint_t           nevents;
+static int                  ep = -1;		/* epoll FD */
+static struct epoll_event  *event_list;  /* epoll事件信息数组头 */
+static ngx_uint_t           nevents;   /* 侦听的epoll事件 */
 
 #if (NGX_HAVE_EVENTFD)
 static int                  notify_fd = -1;
@@ -329,7 +329,7 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
 
 #if (NGX_HAVE_EVENTFD)
         if (ngx_epoll_notify_init(cycle->log) != NGX_OK) {
-            return NGX_ERROR;
+            ngx_epoll_module_ctx.actions.notify = NULL;
         }
 #endif
 
@@ -497,7 +497,7 @@ ngx_epoll_done(ngx_cycle_t *cycle)
     nevents = 0;
 }
 
-
+/* 添加事件到epoll */
 static ngx_int_t
 ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
 {
@@ -714,7 +714,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "epoll timer: %M", timer);
 
-    events = epoll_wait(ep, event_list, (int) nevents, timer);
+    events = epoll_wait(ep, event_list, (int) nevents, timer);  /* 调用epoll wait */
 
     err = (events == -1) ? ngx_errno : 0;
 
@@ -751,7 +751,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
     }
 
     for (i = 0; i < events; i++) {
-        c = event_list[i].data.ptr;
+        c = event_list[i].data.ptr;  /*  ptr存取指针 */
 
         instance = (uintptr_t) c & 1;
         c = (ngx_connection_t *) ((uintptr_t) c & (uintptr_t) ~1);
@@ -801,7 +801,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
             revents |= EPOLLIN|EPOLLOUT;
         }
-
+		/* 先处理epollin 事件 */
         if ((revents & EPOLLIN) && rev->active) {
 
 #if (NGX_HAVE_EPOLLRDHUP)
@@ -819,12 +819,17 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
                 ngx_post_event(rev, queue);
 
             } else {
-                rev->handler(rev);
+            	/*   
+            		ngx_http_wait_request_handler  
+            		ngx_http_keepalive_handler
+            		
+            		*/
+                rev->handler(rev); 
             }
         }
 
         wev = c->write;
-
+		
         if ((revents & EPOLLOUT) && wev->active) {
 
             if (c->fd == -1 || wev->instance != instance) {
@@ -845,6 +850,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
                 ngx_post_event(wev, &ngx_posted_events);
 
             } else {
+            	/*  */
                 wev->handler(wev);
             }
         }

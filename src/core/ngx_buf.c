@@ -43,7 +43,7 @@ ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
     return b;
 }
 
-
+/* …Í«Îbuf¡¥±Ì */
 ngx_chain_t *
 ngx_alloc_chain_link(ngx_pool_t *pool)
 {

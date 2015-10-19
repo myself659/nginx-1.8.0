@@ -12,13 +12,13 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/* LP型的结构 */
 typedef struct {
     size_t      len;
     u_char     *data;
 } ngx_str_t;
 
-
+/* key-value */
 typedef struct {
     ngx_str_t   key;
     ngx_str_t   value;

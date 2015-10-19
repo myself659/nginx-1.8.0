@@ -91,7 +91,7 @@ ngx_write_channel(ngx_socket_t s, ngx_channel_t *ch, size_t size,
     return NGX_OK;
 }
 
-
+/*  读取channel 对应fd */
 ngx_int_t
 ngx_read_channel(ngx_socket_t s, ngx_channel_t *ch, size_t size, ngx_log_t *log)
 {
@@ -125,7 +125,7 @@ ngx_read_channel(ngx_socket_t s, ngx_channel_t *ch, size_t size, ngx_log_t *log)
     msg.msg_accrightslen = sizeof(int);
 #endif
 
-    n = recvmsg(s, &msg, 0);
+    n = recvmsg(s, &msg, 0);  
 
     if (n == -1) {
         err = ngx_errno;
@@ -216,7 +216,7 @@ ngx_add_channel_event(ngx_cycle_t *cycle, ngx_fd_t fd, ngx_int_t event,
     rev->log = cycle->log;
     wev->log = cycle->log;
 
-    rev->channel = 1;
+    rev->channel = 1; /* 为什么置为1 */
     wev->channel = 1;
 
     ev = (event == NGX_READ_EVENT) ? rev : wev;

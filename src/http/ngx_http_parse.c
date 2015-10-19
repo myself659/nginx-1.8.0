@@ -841,7 +841,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
     } state;
 
     /* the last '\0' is not needed because string is zero terminated */
-
+	/* 每次调用都一样，采用static 避免重复初始化 */
     static u_char  lowcase[] =
         "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
         "\0\0\0\0\0\0\0\0\0\0\0\0\0-\0\0" "0123456789\0\0\0\0\0\0"

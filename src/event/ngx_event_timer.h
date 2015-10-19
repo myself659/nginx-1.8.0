@@ -18,6 +18,7 @@
 
 #define NGX_TIMER_LAZY_DELAY  300
 
+/* 为什么采用红黑树来管理定时器 */
 
 ngx_int_t ngx_event_timer_init(ngx_log_t *log);
 ngx_msec_t ngx_event_find_timer(void);
@@ -52,7 +53,8 @@ ngx_event_add_timer(ngx_event_t *ev, ngx_msec_t timer)
 {
     ngx_msec_t      key;
     ngx_msec_int_t  diff;
-
+    
+	/* 用定时值作为值 */
     key = ngx_current_msec + timer;
 
     if (ev->timer_set) {

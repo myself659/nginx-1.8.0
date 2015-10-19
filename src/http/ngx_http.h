@@ -51,7 +51,7 @@ typedef u_char *(*ngx_http_log_handler_pt)(ngx_http_request_t *r,
 #include <ngx_http_ssl_module.h>
 #endif
 
-
+/* http log 上下文信息 哪个连接 哪个请求 当前请求  */
 struct ngx_http_log_ctx_s {
     ngx_connection_t    *connection;
     ngx_http_request_t  *request;
@@ -59,19 +59,39 @@ struct ngx_http_log_ctx_s {
 };
 
 
+
+/* 
+enum {
+	   sw_chunk_start = 0,
+	   sw_chunk_size,
+	   sw_chunk_extension,
+	   sw_chunk_extension_almost_done,
+	   sw_chunk_data,
+	   sw_after_data,
+	   sw_after_data_almost_done,
+	   sw_last_chunk_extension,
+	   sw_last_chunk_extension_almost_done,
+	   sw_trailer,
+	   sw_trailer_almost_done,
+	   sw_trailer_header,
+	   sw_trailer_header_almost_done
+   } state;
+   
+
+*/
 struct ngx_http_chunked_s {
     ngx_uint_t           state;
     off_t                size;
     off_t                length;
 };
 
-
+/* http 状态行信息 */
 typedef struct {
-    ngx_uint_t           http_version;
-    ngx_uint_t           code;
-    ngx_uint_t           count;
-    u_char              *start;
-    u_char              *end;
+    ngx_uint_t           http_version;  /* 版本 */
+    ngx_uint_t           code;			/* 状态码 */
+    ngx_uint_t           count;		    /* ? */
+    u_char              *start;  		/* 在报文中开始位置 */
+    u_char              *end;           /* 在报文中结束位置 */
 } ngx_http_status_t;
 
 
@@ -146,11 +166,6 @@ ngx_int_t ngx_http_special_response_handler(ngx_http_request_t *r,
 ngx_int_t ngx_http_filter_finalize_request(ngx_http_request_t *r,
     ngx_module_t *m, ngx_int_t error);
 void ngx_http_clean_header(ngx_http_request_t *r);
-
-
-time_t ngx_http_parse_time(u_char *value, size_t len);
-size_t ngx_http_get_time(char *buf, time_t t);
-
 
 
 ngx_int_t ngx_http_discard_request_body(ngx_http_request_t *r);

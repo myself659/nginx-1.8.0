@@ -28,11 +28,11 @@ static void ngx_unlock_mutexes(ngx_pid_t pid);
 
 int              ngx_argc;
 char           **ngx_argv;
-char           **ngx_os_argv;
+char           **ngx_os_argv;  /* 与上面的ngx_argv有什么差别 */
 
 ngx_int_t        ngx_process_slot;
 ngx_socket_t     ngx_channel;
-ngx_int_t        ngx_last_process;
+ngx_int_t        ngx_last_process; /* 最大进程数 */
 ngx_process_t    ngx_processes[NGX_MAX_PROCESSES];
 
 
@@ -82,7 +82,7 @@ ngx_signal_t  signals[] = {
     { 0, NULL, "", NULL }
 };
 
-
+/* fork新进程 */
 ngx_pid_t
 ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
     char *name, ngx_int_t respawn)
@@ -172,7 +172,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
             ngx_close_channel(ngx_processes[s].channel, cycle->log);
             return NGX_INVALID_PID;
         }
-
+		/*  */
         ngx_channel = ngx_processes[s].channel[1];
 
     } else {

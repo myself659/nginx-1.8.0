@@ -42,6 +42,7 @@ static ngx_int_t ngx_output_chain_get_buf(ngx_output_chain_ctx_t *ctx,
 static ngx_int_t ngx_output_chain_copy_buf(ngx_output_chain_ctx_t *ctx);
 
 
+/* ·¢ËÍchain buf */
 ngx_int_t
 ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
 {

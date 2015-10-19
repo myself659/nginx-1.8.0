@@ -12,18 +12,18 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/* ngx对文件的抽象 */
 struct ngx_file_s {
-    ngx_fd_t                   fd;
-    ngx_str_t                  name;
-    ngx_file_info_t            info;
+    ngx_fd_t                   fd;    /* 文件fd */
+    ngx_str_t                  name;  /* 文件名 */
+    ngx_file_info_t            info;  /* 文件stat信息 */  
 
     off_t                      offset;
     off_t                      sys_offset;
 
     ngx_log_t                 *log;
 
-#if (NGX_THREADS)
+#if (NGX_THREADS)  
     ngx_int_t                (*thread_handler)(ngx_thread_task_t *task,
                                                ngx_file_t *file);
     void                      *thread_ctx;

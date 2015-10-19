@@ -85,6 +85,9 @@ typedef struct {
 #if (NGX_HAVE_INET6 && defined IPV6_V6ONLY)
     unsigned                   ipv6only:1;
 #endif
+#if (NGX_HAVE_REUSEPORT)
+    unsigned                   reuseport:1;
+#endif
     unsigned                   so_keepalive:2;
     unsigned                   proxy_protocol:1;
 
@@ -114,23 +117,30 @@ typedef struct {
 } ngx_http_listen_opt_t;
 
 
+/* http处理阶段  */
 typedef enum {
-    NGX_HTTP_POST_READ_PHASE = 0,
-
+	 /*  接收完请求头之后的第一个阶段，它位于uri重写之前，实际上很少有模块会注册在该阶段，默认的情况下，该阶段被跳过 */
+    NGX_HTTP_POST_READ_PHASE = 0, 
+	/*  server级别的uri重写阶段，也就是该阶段执行处于server块内，location块外的重写指令，
+	前面的章节已经说明在读取请求头的过程中nginx会根据host及端口找到对应的虚拟主机配置 */
     NGX_HTTP_SERVER_REWRITE_PHASE,
-
+	/* 寻找location配置阶段，该阶段使用重写之后的uri来查找对应的location，值得注意的是该阶段可能会被执行多次，因为也可能有location级别的重写指令 */
     NGX_HTTP_FIND_CONFIG_PHASE,
+    /* location级别的uri重写阶段，该阶段执行location基本的重写指令，也可能会被执行多次 */
     NGX_HTTP_REWRITE_PHASE,
+    /* location级别重写的后一阶段，用来检查上阶段是否有uri重写，并根据结果跳转到合适的阶段  */
     NGX_HTTP_POST_REWRITE_PHASE,
-
+	/* 访问权限控制的前一阶段，该阶段在权限控制阶段之前，一般也用于访问控制，比如限制访问频率，链接数等 */
     NGX_HTTP_PREACCESS_PHASE,
-
+	/* 访问权限控制阶段，比如基于ip黑白名单的权限控制，基于用户名密码的权限控制等 */
     NGX_HTTP_ACCESS_PHASE,
+    /* 访问权限控制的后一阶段，该阶段根据权限控制阶段的执行结果进行相应处理  */
     NGX_HTTP_POST_ACCESS_PHASE,
-
+	/* try_files指令的处理阶段，如果没有配置try_files指令，则该阶段被跳过 */
     NGX_HTTP_TRY_FILES_PHASE,
+    /* 内容生成阶段，该阶段产生响应，并发送到客户端 */
     NGX_HTTP_CONTENT_PHASE,
-
+	/* 日志记录阶段，该阶段记录访问日志 */
     NGX_HTTP_LOG_PHASE
 } ngx_http_phases;
 
@@ -141,8 +151,8 @@ typedef ngx_int_t (*ngx_http_phase_handler_pt)(ngx_http_request_t *r,
 
 struct ngx_http_phase_handler_s {
     ngx_http_phase_handler_pt  checker;
-    ngx_http_handler_pt        handler;
-    ngx_uint_t                 next;
+    ngx_http_handler_pt        handler; 
+    ngx_uint_t                 next;   /* 下一个处理阶段 */
 };
 
 
@@ -157,7 +167,7 @@ typedef struct {
     ngx_array_t                handlers;
 } ngx_http_phase_t;
 
-
+/* core 配置信息 */
 typedef struct {
     ngx_array_t                servers;         /* ngx_http_core_srv_conf_t */
 
@@ -182,9 +192,24 @@ typedef struct {
 
     ngx_uint_t                 try_files;       /* unsigned  try_files:1 */
 
-    ngx_http_phase_t           phases[NGX_HTTP_LOG_PHASE + 1];
+    ngx_http_phase_t           phases[NGX_HTTP_LOG_PHASE + 1];  /* 结构成员为nginx_array_t数组，其成员存储各模块注册的处理函数  */
 } ngx_http_core_main_conf_t;
 
+/*
+http {
+        include mime.types;
+        default_type application/octet-stream;
+        server_names_hash_bucket_size 128;
+        client_header_buffer_size 32k;
+        large_client_header_buffers 4 32k;
+        client_max_body_size 50m;
+        sendfile on; 
+        tcp_nopush on;
+        keepalive_timeout 120;
+        server_tokens off;
+        tcp_nodelay on;
+
+*/
 
 typedef struct {
     /* array of the ngx_http_server_name_t, "server_name" directive */
@@ -195,7 +220,7 @@ typedef struct {
 
     ngx_str_t                   server_name;
 
-    size_t                      connection_pool_size;
+    size_t                      connection_pool_size;  /* 连接池大小 */
     size_t                      request_pool_size;
     size_t                      client_header_buffer_size;
 
@@ -317,6 +342,7 @@ typedef struct {
     unsigned                   test_dir:1;
 } ngx_http_try_file_t;
 
+/* 应用场景 */
 
 struct ngx_http_core_loc_conf_s {
     ngx_str_t     name;          /* location name */
@@ -449,8 +475,8 @@ struct ngx_http_core_loc_conf_s {
 
     ngx_log_t    *error_log;
 
-    ngx_uint_t    types_hash_max_size;
-    ngx_uint_t    types_hash_bucket_size;
+    ngx_uint_t    types_hash_max_size;		/* 表示hash最多有多少bucket  */
+    ngx_uint_t    types_hash_bucket_size;   /* 表示每个bucket有多少字节 */
 
     ngx_queue_t  *locations;
 

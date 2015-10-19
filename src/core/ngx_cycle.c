@@ -16,26 +16,23 @@ static ngx_int_t ngx_init_zone_pool(ngx_cycle_t *cycle,
 static ngx_int_t ngx_test_lockfile(u_char *file, ngx_log_t *log);
 static void ngx_clean_old_cycles(ngx_event_t *ev);
 
-
-volatile ngx_cycle_t  *ngx_cycle;
+/* 用户态用volatile  原因是什么呢? */
+volatile ngx_cycle_t  *ngx_cycle;  /* master 配置信息   */
 ngx_array_t            ngx_old_cycles;
 
 static ngx_pool_t     *ngx_temp_pool;
 static ngx_event_t     ngx_cleaner_event;
 
 ngx_uint_t             ngx_test_config;
+ngx_uint_t             ngx_dump_config;
 ngx_uint_t             ngx_quiet_mode;
-
-#if (NGX_OLD_THREADS)
-ngx_tls_key_t          ngx_core_tls_key;
-#endif
 
 
 /* STUB NAME */
 static ngx_connection_t  dumb;
 /* STUB */
 
-
+/* 根据原来配置信息重新生成新进程配置  */
 ngx_cycle_t *
 ngx_init_cycle(ngx_cycle_t *old_cycle)
 {
@@ -127,6 +124,13 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     cycle->paths.nalloc = n;
     cycle->paths.pool = pool;
 
+
+    if (ngx_array_init(&cycle->config_dump, pool, 1, sizeof(ngx_conf_dump_t))
+        != NGX_OK)
+    {
+        ngx_destroy_pool(pool);
+        return NULL;
+    }
 
     if (old_cycle->open_files.part.nelts) {
         n = old_cycle->open_files.part.nelts;
@@ -260,7 +264,8 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         ngx_destroy_cycle_pools(&conf);
         return NULL;
     }
-
+    
+	/* 配置文件: /usr/local/nginx/conf/nginx.conf */
     if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
@@ -385,8 +390,8 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 #endif
     }
 
-    cycle->log = &cycle->new_log;
-    pool->log = &cycle->new_log;
+    cycle->log = &cycle->new_log;  /* 更新log指针为新new_log */
+    pool->log = &cycle->new_log;   /* 更新log指针为新new_log */
 
 
     /* create shared memory */
@@ -441,9 +446,13 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
             }
 
             if (shm_zone[i].tag == oshm_zone[n].tag
-                && shm_zone[i].shm.size == oshm_zone[n].shm.size)
+                && shm_zone[i].shm.size == oshm_zone[n].shm.size
+                && !shm_zone[i].noreuse)
             {
                 shm_zone[i].shm.addr = oshm_zone[n].shm.addr;
+#if (NGX_WIN32)
+                shm_zone[i].shm.handle = oshm_zone[n].shm.handle;
+#endif
 
                 if (shm_zone[i].init(&shm_zone[i], oshm_zone[n].data)
                     != NGX_OK)
@@ -490,6 +499,10 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
             for (i = 0; i < old_cycle->listening.nelts; i++) {
                 if (ls[i].ignore) {
+                    continue;
+                }
+
+                if (ls[i].remain) {
                     continue;
                 }
 
@@ -540,6 +553,13 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
                         nls[n].add_deferred = 1;
                     }
 #endif
+
+#if (NGX_HAVE_REUSEPORT)
+                    if (nls[n].reuseport && !ls[i].reuseport) {
+                        nls[n].add_reuseport = 1;
+                    }
+#endif
+
                     break;
                 }
             }
@@ -862,6 +882,22 @@ ngx_init_zone_pool(ngx_cycle_t *cycle, ngx_shm_zone_t *zn)
         if (sp == sp->addr) {
             return NGX_OK;
         }
+
+#if (NGX_WIN32)
+
+        /* remap at the required address */
+
+        if (ngx_shm_remap(&zn->shm, sp->addr) != NGX_OK) {
+            return NGX_ERROR;
+        }
+
+        sp = (ngx_slab_pool_t *) zn->shm.addr;
+
+        if (sp == sp->addr) {
+            return NGX_OK;
+        }
+
+#endif
 
         ngx_log_error(NGX_LOG_EMERG, cycle->log, 0,
                       "shared zone \"%V\" has no equal addresses: %p vs %p",
@@ -1210,6 +1246,10 @@ ngx_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size, void *tag)
             return NULL;
         }
 
+        if (shm_zone[i].shm.size == 0) {
+            shm_zone[i].shm.size = size;
+        }
+
         if (size && size != shm_zone[i].shm.size) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                             "the size %uz of shared memory zone \"%V\" "
@@ -1234,6 +1274,7 @@ ngx_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size, void *tag)
     shm_zone->shm.exists = 0;
     shm_zone->init = NULL;
     shm_zone->tag = tag;
+    shm_zone->noreuse = 0;
 
     return shm_zone;
 }

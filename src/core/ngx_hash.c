@@ -8,6 +8,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
+/* 用实例图说明hash的组织情况 */
 
 void *
 ngx_hash_find(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
@@ -29,13 +30,14 @@ ngx_hash_find(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
         if (len != (size_t) elt->len) {
             goto next;
         }
-
+        
+        /* key值比较 */
         for (i = 0; i < len; i++) {
             if (name[i] != elt->name[i]) {
                 goto next;
             }
         }
-
+	
         return elt->value;
 
     next:
@@ -258,6 +260,7 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
     ngx_hash_elt_t  *elt, **buckets;
 
     for (n = 0; n < nelts; n++) {
+    	/* 检查各个bucket size */
         if (hinit->bucket_size < NGX_HASH_ELT_SIZE(&names[n]) + sizeof(void *))
         {
             ngx_log_error(NGX_LOG_EMERG, hinit->pool->log, 0,
@@ -268,11 +271,13 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
         }
     }
 
+	/* 为什么要用sizeof(u_short)作基本数据单元大小 */
     test = ngx_alloc(hinit->max_size * sizeof(u_short), hinit->pool->log);
     if (test == NULL) {
         return NGX_ERROR;
     }
 
+	/* 计算start */
     bucket_size = hinit->bucket_size - sizeof(void *);
 
     start = nelts / (bucket_size / (2 * sizeof(void *)));
@@ -282,7 +287,8 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
         start = hinit->max_size - 1000;
     }
 
-    for (size = start; size <= hinit->max_size; size++) {
+	/* 查找 q */
+    for (size = start; size <= hinit->max_size; size++ ) {
 
         ngx_memzero(test, size * sizeof(u_short));
 
@@ -598,6 +604,7 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
     return NGX_OK;
 }
 
+/*计算hash key */
 
 ngx_uint_t
 ngx_hash_key(u_char *data, size_t len)
@@ -613,7 +620,7 @@ ngx_hash_key(u_char *data, size_t len)
     return key;
 }
 
-
+/* 转化为小写字符串计算hash key */
 ngx_uint_t
 ngx_hash_key_lc(u_char *data, size_t len)
 {
@@ -628,7 +635,7 @@ ngx_hash_key_lc(u_char *data, size_t len)
     return key;
 }
 
-
+/* 将字符串转化为小写 */
 ngx_uint_t
 ngx_hash_strlow(u_char *dst, u_char *src, size_t n)
 {

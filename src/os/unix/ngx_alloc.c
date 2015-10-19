@@ -9,9 +9,9 @@
 #include <ngx_core.h>
 
 
-ngx_uint_t  ngx_pagesize;
+ngx_uint_t  ngx_pagesize;			 /* 系统页大小 */
 ngx_uint_t  ngx_pagesize_shift;
-ngx_uint_t  ngx_cacheline_size;
+ngx_uint_t  ngx_cacheline_size;		 /* cacheline大小 */
 
 
 void *

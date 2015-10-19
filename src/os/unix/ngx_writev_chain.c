@@ -104,6 +104,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 }
 
 
+/* 将chain buf 内容写入iovec */
 ngx_chain_t *
 ngx_output_chain_to_iovec(ngx_iovec_t *vec, ngx_chain_t *in, size_t limit,
     ngx_log_t *log)
@@ -177,7 +178,7 @@ ngx_output_chain_to_iovec(ngx_iovec_t *vec, ngx_chain_t *in, size_t limit,
     return in;
 }
 
-
+/* connect处理通过该函数发送 */
 ssize_t
 ngx_writev(ngx_connection_t *c, ngx_iovec_t *vec)
 {
@@ -200,7 +201,7 @@ eintr:
                            "writev() not ready");
             return NGX_AGAIN;
 
-        case NGX_EINTR:
+        case NGX_EINTR: 	/* 被中断打断需要重新发送 */
             ngx_log_debug0(NGX_LOG_DEBUG_EVENT, c->log, err,
                            "writev() was interrupted");
             goto eintr;

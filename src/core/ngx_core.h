@@ -32,6 +32,7 @@ typedef struct ngx_thread_task_s  ngx_thread_task_t;
 typedef void (*ngx_event_handler_pt)(ngx_event_t *ev);
 typedef void (*ngx_connection_handler_pt)(ngx_connection_t *c);
 
+/* nginx ´íÎóÂë */
 
 #define  NGX_OK          0
 #define  NGX_ERROR      -1
@@ -54,6 +55,7 @@ typedef void (*ngx_connection_handler_pt)(ngx_connection_t *c);
 #include <ngx_process.h>
 #include <ngx_user.h>
 #include <ngx_parse.h>
+#include <ngx_parse_time.h>
 #include <ngx_log.h>
 #include <ngx_alloc.h>
 #include <ngx_palloc.h>
@@ -71,6 +73,7 @@ typedef void (*ngx_connection_handler_pt)(ngx_connection_t *c);
 #endif
 #include <ngx_radix_tree.h>
 #include <ngx_times.h>
+#include <ngx_rwlock.h>
 #include <ngx_shmtx.h>
 #include <ngx_slab.h>
 #include <ngx_inet.h>

@@ -42,7 +42,7 @@ ngx_atomic_fetch_add(ngx_atomic_t *value, ngx_atomic_int_t add)
 
         res = old + add;
 
-        res = NGX_CASA(res, old, value);
+        res = NGX_CASA(res, old, value); /* ÀûÓÃcas */
 
         if (res == old) {
             return res;

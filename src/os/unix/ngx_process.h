@@ -19,10 +19,11 @@ typedef pid_t       ngx_pid_t;
 
 typedef void (*ngx_spawn_proc_pt) (ngx_cycle_t *cycle, void *data);
 
+/* master进程对worker进程的信息维护 */
 typedef struct {
     ngx_pid_t           pid;
     int                 status;
-    ngx_socket_t        channel[2];
+    ngx_socket_t        channel[2];  /* worker与master进程之间通信socketpairfd  */
 
     ngx_spawn_proc_pt   proc;
     void               *data;
@@ -46,6 +47,7 @@ typedef struct {
 
 #define NGX_MAX_PROCESSES         1024
 
+/* 这五种类型的区别  */
 #define NGX_PROCESS_NORESPAWN     -1
 #define NGX_PROCESS_JUST_SPAWN    -2
 #define NGX_PROCESS_RESPAWN       -3

@@ -56,14 +56,14 @@ typedef struct {
     unsigned             done:1;
     unsigned             nomem:1;
     unsigned             gzheader:1;
-    unsigned             buffering:1;
+    unsigned             buffering:1;  /* 置1表示发送内容已在缓存 */
 
     size_t               zin;
     size_t               zout;
 
     uint32_t             crc32;
     z_stream             zstream;
-    ngx_http_request_t  *request;
+    ngx_http_request_t  *request;  /* 对应request */
 } ngx_http_gzip_ctx_t;
 
 

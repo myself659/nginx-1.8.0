@@ -16,7 +16,7 @@ static void ngx_encode_base64_internal(ngx_str_t *dst, ngx_str_t *src,
 static ngx_int_t ngx_decode_base64_internal(ngx_str_t *dst, ngx_str_t *src,
     const u_char *basis);
 
-
+/* ½«×Ö·û´®×ª»¯Ð¡Ð´×Ö·û´® */
 void
 ngx_strlow(u_char *dst, u_char *src, size_t n)
 {

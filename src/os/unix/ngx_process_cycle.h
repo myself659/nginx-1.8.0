@@ -15,15 +15,15 @@
 
 #define NGX_CMD_OPEN_CHANNEL   1
 #define NGX_CMD_CLOSE_CHANNEL  2
-#define NGX_CMD_QUIT           3
-#define NGX_CMD_TERMINATE      4
+#define NGX_CMD_QUIT           3  /* QUIT<-->NGX_SHUTDOWN_SIGNAL<--> NGX_CMD_QUIT< -- >ngx_quit*/
+#define NGX_CMD_TERMINATE      4  /* TERM<-->NGX_TERMINATE_SIGNAL<--> NGX_CMD_TERMINATE< -- >ngx_terminate*/
 #define NGX_CMD_REOPEN         5
 
 
-#define NGX_PROCESS_SINGLE     0
-#define NGX_PROCESS_MASTER     1
-#define NGX_PROCESS_SIGNALLER  2
-#define NGX_PROCESS_WORKER     3
+#define NGX_PROCESS_SINGLE     0   /* 单进程模式 */
+#define NGX_PROCESS_MASTER     1   /* master进程模式 */
+#define NGX_PROCESS_SIGNALLER  2   /* 信号处理模式 */
+#define NGX_PROCESS_WORKER     3   /* 工作进程模式 */
 #define NGX_PROCESS_HELPER     4
 
 
@@ -39,6 +39,7 @@ void ngx_single_process_cycle(ngx_cycle_t *cycle);
 
 
 extern ngx_uint_t      ngx_process;
+extern ngx_uint_t      ngx_worker;
 extern ngx_pid_t       ngx_pid;
 extern ngx_pid_t       ngx_new_binary;
 extern ngx_uint_t      ngx_inherited;

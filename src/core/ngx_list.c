@@ -27,14 +27,16 @@ ngx_list_create(ngx_pool_t *pool, ngx_uint_t n, size_t size)
 }
 
 
+/* 加入一个链表节点 */
 void *
 ngx_list_push(ngx_list_t *l)
 {
     void             *elt;
     ngx_list_part_t  *last;
 
+	
     last = l->last;
-
+	/* 最后节点的元素个数已达规格,创建新的节点 */
     if (last->nelts == l->nalloc) {
 
         /* the last part is full, allocate a new list part */
@@ -51,12 +53,15 @@ ngx_list_push(ngx_list_t *l)
 
         last->nelts = 0;
         last->next = NULL;
-
+		/* 加入链表尾  */
         l->last->next = last;
+        /* 更新链表尾节点 */
         l->last = last;
     }
 
+	/* 从尾节点计算下一个可用偏移地址 */
     elt = (char *) last->elts + l->size * last->nelts;
+    /* 元素节点个数加1 */
     last->nelts++;
 
     return elt;

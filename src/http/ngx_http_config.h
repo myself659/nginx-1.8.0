@@ -13,10 +13,37 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
+/*
+server块 
+server {
+        listen 80;
+        server_name _;
+        access_log /home/wwwlogs/access_nginx.log combined;
+        root /home/wwwroot/default;
+        index index.html index.php;
+        if ( $query_string ~* ".*[\;'\<\>].*" ){
+                return 404;
+                }
+
+*/
+
+/*
+ location块 
+ 
+ location ~ .*\.(php|php5)?$ {
+                #fastcgi_pass remote_php_ip:9000;
+                fastcgi_pass unix:/dev/shm/php-cgi.sock;
+                fastcgi_index index.php;
+                include fastcgi.conf;
+                }	
+*/
 
 typedef struct {
-    void        **main_conf;
+	
+    void        **main_conf;  
+    /* server块配置信息 */
     void        **srv_conf;
+    /* location块的配置信息 */
     void        **loc_conf;
 } ngx_http_conf_ctx_t;
 

@@ -46,7 +46,7 @@ ngx_module_t  ngx_http_postpone_filter_module = {
 };
 
 
-static ngx_http_output_body_filter_pt    ngx_http_next_body_filter;
+static ngx_http_output_body_filter_pt    ngx_http_next_body_filter;  /* */
 
 
 static ngx_int_t

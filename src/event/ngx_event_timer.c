@@ -9,7 +9,7 @@
 #include <ngx_core.h>
 #include <ngx_event.h>
 
-
+/* 定时器的rbtree */
 ngx_rbtree_t              ngx_event_timer_rbtree;
 static ngx_rbtree_node_t  ngx_event_timer_sentinel;
 
@@ -61,6 +61,7 @@ ngx_event_expire_timers(void)
     for ( ;; ) {
         root = ngx_event_timer_rbtree.root;
 
+		/* 没有定时器，直接返回 */
         if (root == sentinel) {
             return;
         }
@@ -68,17 +69,17 @@ ngx_event_expire_timers(void)
         node = ngx_rbtree_min(root, sentinel);
 
         /* node->key > ngx_current_time */
-
+		/* 没有定时器超时 */
         if ((ngx_msec_int_t) (node->key - ngx_current_msec) > 0) {
             return;
         }
-
+		/* 获取该定时器对应event  直接用container */
         ev = (ngx_event_t *) ((char *) node - offsetof(ngx_event_t, timer));
 
         ngx_log_debug2(NGX_LOG_DEBUG_EVENT, ev->log, 0,
                        "event timer del: %d: %M",
                        ngx_event_ident(ev->data), ev->timer.key);
-
+		/* 删除定时器 */
         ngx_rbtree_delete(&ngx_event_timer_rbtree, &ev->timer);
 
 #if (NGX_DEBUG)
@@ -86,11 +87,13 @@ ngx_event_expire_timers(void)
         ev->timer.right = NULL;
         ev->timer.parent = NULL;
 #endif
-
+		/* 设置事件未起定时器 */
         ev->timer_set = 0;
 
         ev->timedout = 1;
-
+        
+		/* 调用定时器超时处理  */
+		
         ev->handler(ev);
     }
 }

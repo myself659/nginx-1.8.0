@@ -60,7 +60,7 @@ typedef struct {
     ngx_msec_t                       lock_time;
 } ngx_http_file_cache_node_t;
 
-
+/* http cache  缓存是怎么用 */
 struct ngx_http_cache_s {
     ngx_file_t                       file;
     ngx_array_t                      keys;
@@ -130,11 +130,11 @@ typedef struct {
     u_char                           variant[NGX_HTTP_CACHE_KEY_LEN];
 } ngx_http_file_cache_header_t;
 
-
+/* 这个类型为什么要有两个节点和一个rbtree  */
 typedef struct {
     ngx_rbtree_t                     rbtree;
     ngx_rbtree_node_t                sentinel;
-    ngx_queue_t                      queue;
+    ngx_queue_t                      queue; /* 队列节点 */
     ngx_atomic_t                     cold;
     ngx_atomic_t                     loading;
     off_t                            size;
