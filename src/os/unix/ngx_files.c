@@ -173,6 +173,13 @@ ngx_thread_read_handler(void *data, ngx_log_t *log)
 #endif /* NGX_THREADS */
 
 
+/*
+ngx_file_t *file @写入文件
+u_char *buf  @写入内容指针 
+size_t size  @写入内容大小 
+off_t offset @写入文件的偏移 
+
+*/
 ssize_t
 ngx_write_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
 {
@@ -219,7 +226,7 @@ ngx_write_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
 
     for ( ;; ) {
         n = write(file->fd, buf + written, size);
-
+		/* 有可能不是一次写成功，如果部分写成功需要继续写 */
         if (n == -1) {
             ngx_log_error(NGX_LOG_CRIT, file->log, ngx_errno,
                           "write() \"%s\" failed", file->name.data);
@@ -228,7 +235,7 @@ ngx_write_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
 
         file->offset += n;
         written += n;
-
+		/* 全部写成功，返回 */
         if ((size_t) n == size) {
             return written;
         }

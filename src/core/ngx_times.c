@@ -24,7 +24,7 @@ static ngx_uint_t        slot;
 static ngx_atomic_t      ngx_time_lock;  /* 并发情况下保护time相关数据 */
 
 volatile ngx_msec_t      ngx_current_msec;
-volatile ngx_time_t     *ngx_cached_time;
+volatile ngx_time_t     *ngx_cached_time;   
 volatile ngx_str_t       ngx_cached_err_log_time;
 volatile ngx_str_t       ngx_cached_http_time;
 volatile ngx_str_t       ngx_cached_http_log_time;
@@ -95,7 +95,7 @@ ngx_time_update(void)
 
     ngx_current_msec = (ngx_msec_t) sec * 1000 + msec;
 
-    tp = &cached_time[slot];
+    tp = &cached_time[slot];  
 
     if (tp->sec == sec) {
         tp->msec = msec;
@@ -178,7 +178,7 @@ ngx_time_update(void)
 
     ngx_memory_barrier();
 
-    ngx_cached_time = tp;
+    ngx_cached_time = tp;  /* 更新到缓存时间值 主要减少getoftime系统的开销 */
     ngx_cached_http_time.data = p0;
     ngx_cached_err_log_time.data = p1;
     ngx_cached_http_log_time.data = p2;
