@@ -138,7 +138,7 @@ struct ngx_module_s {
 
 	/* 模块各阶段处理函数指针  */
     ngx_int_t           (*init_master)(ngx_log_t *log);
-
+	/* ngx_init_cycle 阶段调用初始化各个模块 */
     ngx_int_t           (*init_module)(ngx_cycle_t *cycle);
 
     ngx_int_t           (*init_process)(ngx_cycle_t *cycle);

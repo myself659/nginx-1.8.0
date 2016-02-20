@@ -20,10 +20,11 @@
 #define NGX_CMD_REOPEN         5
 
 
-#define NGX_PROCESS_SINGLE     0   /* µ¥½ø³ÌÄ£Ê½ */
-#define NGX_PROCESS_MASTER     1   /* master½ø³ÌÄ£Ê½ */
-#define NGX_PROCESS_SIGNALLER  2   /* ĞÅºÅ´¦ÀíÄ£Ê½ */
-#define NGX_PROCESS_WORKER     3   /* ¹¤×÷½ø³ÌÄ£Ê½ */
+#define NGX_PROCESS_SINGLE     0   /* å•è¿›ç¨‹æ¨¡å¼ */
+#define NGX_PROCESS_MASTER     1   /* masterè¿›ç¨‹æ¨¡å¼ */
+#define NGX_PROCESS_SIGNALLER  2   /* ä¿¡å·å¤„ç†æ¨¡å¼ */
+#define NGX_PROCESS_WORKER     3   /* å·¥ä½œè¿›ç¨‹æ¨¡å¼ */
+
 #define NGX_PROCESS_HELPER     4
 
 

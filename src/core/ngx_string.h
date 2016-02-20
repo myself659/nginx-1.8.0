@@ -12,7 +12,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-/* LP型的结构 */
+/* LV 结构 */
 typedef struct {
     size_t      len;
     u_char     *data;

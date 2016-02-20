@@ -58,7 +58,7 @@ static u_char            cached_syslog_time[NGX_TIME_SLOTS]
 static char  *week[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 static char  *months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-
+/* 初始化并更新时间 */
 void
 ngx_time_init(void)
 {

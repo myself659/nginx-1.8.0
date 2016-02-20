@@ -313,7 +313,7 @@ ngx_log_errno(u_char *buf, u_char *last, ngx_err_t err)
     return buf;
 }
 
-
+/* 初始化日志，如初始化全局变量 ngx_prefix，打开日志文件 ngx_log_file*/
 ngx_log_t *
 ngx_log_init(u_char *prefix)
 {

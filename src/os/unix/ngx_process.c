@@ -183,7 +183,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
     ngx_process_slot = s;
 
 
-    pid = fork();
+    pid = fork();  /* fork子进程 */
 
     switch (pid) {
 
@@ -194,6 +194,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
         return NGX_INVALID_PID;
 
     case 0:
+    	/* 在子线程执行 */
         ngx_pid = ngx_getpid();
         proc(cycle, data);
         break;

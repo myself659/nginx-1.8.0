@@ -102,6 +102,7 @@ uint32_t  ngx_crc32_table256[] = {
 uint32_t *ngx_crc32_table_short = ngx_crc32_table16;
 
 
+/* 初始化 CRC 表 ( 后续的 CRC 校验通过查表进行，效率高 ) */
 ngx_int_t
 ngx_crc32_table_init(void)
 {

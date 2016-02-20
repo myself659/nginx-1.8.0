@@ -24,8 +24,8 @@ typedef struct {
     ngx_pid_t           pid;
     int                 status;
     ngx_socket_t        channel[2];  /* worker与master进程之间通信socketpairfd  */
-
-    ngx_spawn_proc_pt   proc;
+	
+    ngx_spawn_proc_pt   proc;  /* */
     void               *data;
     char               *name;
 
@@ -48,6 +48,34 @@ typedef struct {
 #define NGX_MAX_PROCESSES         1024
 
 /* 这五种类型的区别  */
+ 
+/* 
+NGX_PROCESS_XXX 用来标示创建子进程的属性. 
+ 
+NGX_PROCESS_NORESPAWN: 
+    子进程退出时,父进程不会再次创建, 该标记用在创建 "cache loader process". 
+
+NGX_PROCESS_JUST_SPAWN:  
+    当 nginx -s reload 时, 如果还有未加载的 proxy_cache_path, 
+    则需要再次创建 "cache loader process"加载,并用 NGX_PROCESS_JUST_SPAWN给这个进程做记号,
+    防止 "master会向老的worker进程,老的cache manager进程,老的cache loader进程(如果存在)发送NGX_CMD_QUIT或SIGQUIT" 时,
+    误以为这个进程是老的cache loader进程. 
+
+NGX_PROCESS_RESPAWN:  
+    子进程异常退出时,master会重新创建它, 如当worker或cache manager异常退出时,父进程会重新创建它. 
+
+NGX_PROCESS_JUST_RESPAWN:  
+    当 nginx -s reload 时, master会向老的worker进程,老的cache manager进程,
+    老的cache loader进程(如果存在)发送 ngx_write_channel(NGX_CMD_QUIT)(如果失败则发送SIGQUIT信号); 
+    该标记用来标记进程数组中哪些是新创建的子进程;其他的就是老的子进程. 
+
+NGX_PROCESS_DETACHED: 热代码替换 
+
+更多参考:http://blog.csdn.net/gsnumen/article/details/7979484?reload
+
+ */  
+
+
 #define NGX_PROCESS_NORESPAWN     -1
 #define NGX_PROCESS_JUST_SPAWN    -2
 #define NGX_PROCESS_RESPAWN       -3

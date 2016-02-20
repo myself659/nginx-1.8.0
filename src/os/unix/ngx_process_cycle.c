@@ -27,7 +27,7 @@ static void ngx_cache_manager_process_cycle(ngx_cycle_t *cycle, void *data);
 static void ngx_cache_manager_process_handler(ngx_event_t *ev);
 static void ngx_cache_loader_process_handler(ngx_event_t *ev);
 
-
+/* */
 ngx_uint_t    ngx_process;
 ngx_uint_t    ngx_worker;
 ngx_pid_t     ngx_pid;
@@ -36,7 +36,7 @@ sig_atomic_t  ngx_reap;
 sig_atomic_t  ngx_sigio;
 sig_atomic_t  ngx_sigalrm;
 sig_atomic_t  ngx_terminate; /* ½ø³ÌÊÇ·ñ±»ÖÕÖ¹ */
-sig_atomic_t  ngx_quit;
+sig_atomic_t  ngx_quit; /* ½ø³ÌÊÇ·ñÍË³ö */
 sig_atomic_t  ngx_debug_quit;
 ngx_uint_t    ngx_exiting; /* ½ø³ÌÊÇ·ñÕýÔÚÍË³ö */
 sig_atomic_t  ngx_reconfigure; /* ÖØÐÂÅäÖÃ */
@@ -84,6 +84,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     ngx_listening_t   *ls;
     ngx_core_conf_t   *ccf;
 
+	/* ÉèÖÃ¹¤×÷Ïß³ÌµÄÆÁ±ÎÐÅºÅ  */
     sigemptyset(&set);
     sigaddset(&set, SIGCHLD);
     sigaddset(&set, SIGALRM);
@@ -284,6 +285,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 }
 
 
+
 void
 ngx_single_process_cycle(ngx_cycle_t *cycle)
 {
@@ -318,7 +320,7 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)
 
             ngx_master_process_exit(cycle);
         }
-
+		/* ÖØÐÂÅäÖÃ */
         if (ngx_reconfigure) {
             ngx_reconfigure = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reconfiguring");
@@ -679,22 +681,24 @@ ngx_reap_children(ngx_cycle_t *cycle)
     return live;
 }
 
-
+/* master½ø³ÌÍË³ö´¦Àí */
 static void
 ngx_master_process_exit(ngx_cycle_t *cycle)
 {
     ngx_uint_t  i;
 
+	/* É¾³ýpidfile */
     ngx_delete_pidfile(cycle);
 
     ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "exit");
-
+	/* µ÷ÓÃÄ£¿é´¦ÀíÍË³ö´¦Àíº¯Êý */
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->exit_master) {
             ngx_modules[i]->exit_master(cycle);
         }
     }
 
+	/* ¹Ø±ÕÕìÌýsocket */
     ngx_close_listening_sockets(cycle);
 
     /*
@@ -704,7 +708,7 @@ ngx_master_process_exit(ngx_cycle_t *cycle)
      * ngx_cycle->pool is already destroyed.
      */
 
-
+	/* È«¾Ö±äÁ¿ÍË³ö´¦Àí */
     ngx_exit_log = *ngx_log_get_file_log(ngx_cycle->log);
 
     ngx_exit_log_file.fd = ngx_exit_log.file->fd;
@@ -717,8 +721,10 @@ ngx_master_process_exit(ngx_cycle_t *cycle)
     ngx_exit_cycle.files_n = ngx_cycle->files_n;
     ngx_cycle = &ngx_exit_cycle;
 
+	/* É¾³ýÄÚ´æ³Ø */
     ngx_destroy_pool(cycle->pool);
 
+	/* µ÷ÓÃexit½áÊø½ø³Ì  */
     exit(0);
 }
 
@@ -742,7 +748,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
     for ( ;; ) {
 
         if (ngx_exiting) {
-
+			/* ´¦ÀíÏÖÓÐÁ¬½Ó Èç¹ûÊÇ³¤Á¬½ÓÔõÃ´°ì£¬»á³¤Ê±¼äµÈ´ýÁ¬½Ó´¦ÀíÍê³ÉÂðå  */
             c = cycle->connections;
 
             for (i = 0; i < cycle->connection_n; i++) {
@@ -843,6 +849,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_int_t worker)
         }
     }
 
+	/*  »ñµÃÖ´ÐÐ±¾½ø³ÌµÄÓÃ»§ID,Èç¹ûÒÔrootÉí·ÝÔËÐÐ»ñÈ¡euidÒ»°ãÎª0  */
     if (geteuid() == 0) {
         if (setgid(ccf->group) == -1) {
             ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,

@@ -409,6 +409,7 @@ main(int argc, char *const *argv)
     ngx_use_stderr = 0;
 
     if (ngx_process == NGX_PROCESS_SINGLE) {
+    	/* 单进程模式 */
         ngx_single_process_cycle(cycle);
 
     } else {
@@ -419,6 +420,12 @@ main(int argc, char *const *argv)
 }
 
 
+/*
+解析环境变量 NGINX_VAR = "NGINX" 中的 sockets，并保存至 ngx_cycle.listening 数组；
+ 设置 ngx_inherited = 1；
+调用 ngx_set_inherited_sockets() 逐一对 ngx_cycle.listening 数组中的 sockets 进行设置；
+
+*/
 static ngx_int_t
 ngx_add_inherited_sockets(ngx_cycle_t *cycle)
 {
@@ -671,7 +678,7 @@ ngx_exec_new_binary(ngx_cycle_t *cycle, char *const *argv)
     return pid;
 }
 
-/* */
+/*  解析命令参数 */
 
 static ngx_int_t
 ngx_get_options(int argc, char *const *argv)
@@ -1043,7 +1050,7 @@ ngx_core_module_init_conf(ngx_cycle_t *cycle, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        ccf->username = NGX_USER;
+        ccf->username = NGX_USER;  /* 未见定义 */
         ccf->user = pwd->pw_uid;
 
         ngx_set_errno(0);

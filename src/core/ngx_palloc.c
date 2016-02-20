@@ -12,6 +12,13 @@
 static void *ngx_palloc_block(ngx_pool_t *pool, size_t size);
 static void *ngx_palloc_large(ngx_pool_t *pool, size_t size);
 
+/*
+
+nginx的内存池的好处如下:
+1. 降低申请内存的开销 
+2. 编码不需要花更多的时间考虑内存 
+
+*/
 
 /* 创建一个内存池 */
 ngx_pool_t *
