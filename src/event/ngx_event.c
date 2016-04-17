@@ -35,7 +35,7 @@ static void *ngx_event_core_create_conf(ngx_cycle_t *cycle);
 static char *ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf);
 
 
-static ngx_uint_t     ngx_timer_resolution;
+static ngx_uint_t     ngx_timer_resolution; /* 定时器精度  */
 sig_atomic_t          ngx_event_timer_alarm;
 
 static ngx_uint_t     ngx_event_max_module;
@@ -50,10 +50,10 @@ ngx_atomic_t         *ngx_connection_counter = &connection_counter;
 
 ngx_atomic_t         *ngx_accept_mutex_ptr;
 ngx_shmtx_t           ngx_accept_mutex;   		/* accept互斥锁 */
-ngx_uint_t            ngx_use_accept_mutex;
+ngx_uint_t            ngx_use_accept_mutex;   /* accept是否使用 互斥锁 */
 ngx_uint_t            ngx_accept_events;
-ngx_uint_t            ngx_accept_mutex_held;
-ngx_msec_t            ngx_accept_mutex_delay;
+ngx_uint_t            ngx_accept_mutex_held;  /* 是否持有mutex锁 */
+ngx_msec_t            ngx_accept_mutex_delay; /* 等待获取锁的时间 */
 ngx_int_t             ngx_accept_disabled;    /* 控制是否竞争ngx_accept_mutex */
 
 
@@ -189,18 +189,20 @@ ngx_module_t  ngx_event_core_module = {
     NGX_MODULE_V1_PADDING
 };
 
-/* 事件与定时器处理入口函数 */
+/* 事件与定时器处理入口函数 也是循环处理的单元 */
 void
 ngx_process_events_and_timers(ngx_cycle_t *cycle)
 {
     ngx_uint_t  flags;
     ngx_msec_t  timer, delta;
 
+	/* 如果设置了就不用更新时间了,因为在信号处理函数里会更新时间 */
     if (ngx_timer_resolution) {
         timer = NGX_TIMER_INFINITE;
         flags = 0;
 
     } else {
+    	 /* 查找最近的事件发生时间,可能是INFINITE */
         timer = ngx_event_find_timer();
         flags = NGX_UPDATE_TIME;
 
@@ -237,11 +239,11 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
         }
     }
 
-    delta = ngx_current_msec;
+    delta = ngx_current_msec; /* 记录事件处理前时间 */
 
-    (void) ngx_process_events(cycle, timer, flags);  /*  ngx_epoll_process_events  */
+    (void) ngx_process_events(cycle, timer, flags);  /* 调用 ngx_epoll_process_events  */
 
-    delta = ngx_current_msec - delta;
+    delta = ngx_current_msec - delta; /* 计算事件处理的耗时 */
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "timer delta: %M", delta);
@@ -252,8 +254,10 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
         ngx_shmtx_unlock(&ngx_accept_mutex);
     }
 
+	/*  消耗时间 */
     if (delta) {
-        ngx_event_expire_timers();
+		 /* 处理所有超时定时器 */
+        ngx_event_expire_timers(); 
     }
 
     ngx_event_process_posted(cycle, &ngx_posted_events);
@@ -564,7 +568,7 @@ ngx_timer_signal_handler(int signo)
 
 #endif
 
-
+/* 事件第二阶段 初始化 */
 static ngx_int_t
 ngx_event_process_init(ngx_cycle_t *cycle)
 {
@@ -626,7 +630,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     }
 
 #if !(NGX_WIN32)
-
+	/*   ?? */
     if (ngx_timer_resolution && !(ngx_event_flags & NGX_USE_TIMER_EVENT)) {
         struct sigaction  sa;
         struct itimerval  itv;
@@ -641,11 +645,15 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             return NGX_ERROR;
         }
 
+		/* 设置定时器周期间隔 */
         itv.it_interval.tv_sec = ngx_timer_resolution / 1000;
         itv.it_interval.tv_usec = (ngx_timer_resolution % 1000) * 1000;
+
+		/* 下一次超时间隔 */
         itv.it_value.tv_sec = ngx_timer_resolution / 1000;
         itv.it_value.tv_usec = (ngx_timer_resolution % 1000 ) * 1000;
 
+		/* 启动定时器，当超时会向当前线程发送SIGALRM信号  */
         if (setitimer(ITIMER_REAL, &itv, NULL) == -1) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                           "setitimer() failed");
@@ -660,9 +668,9 @@ ngx_event_process_init(ngx_cycle_t *cycle)
                           "getrlimit(RLIMIT_NOFILE) failed");
             return NGX_ERROR;
         }
-
+		/* fd的规格 */
         cycle->files_n = (ngx_uint_t) rlmt.rlim_cur;
-
+		/* 申请内存，存储fd对应的ngx_connection_t信息的指针  */
         cycle->files = ngx_calloc(sizeof(ngx_connection_t *) * cycle->files_n,
                                   cycle->log);
         if (cycle->files == NULL) {
@@ -703,6 +711,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         wev[i].closed = 1;
     }
 
+	/* 初始化每一个connection */
     i = cycle->connection_n;
     next = NULL;
 
@@ -808,7 +817,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         }
 
 #else
-
+		/* 设置侦听连接回调处理函数  */
         rev->handler = ngx_event_accept;
 
         if (ngx_use_accept_mutex
@@ -819,7 +828,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         {
             continue;
         }
-
+		/* 添加侦听事件 */
         if (ngx_add_event(rev, NGX_READ_EVENT, 0) == NGX_ERROR) {
             return NGX_ERROR;
         }
@@ -949,7 +958,7 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/* 解析配置获取连接数 */
 static char *
 ngx_event_connections(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {

@@ -32,7 +32,7 @@ struct ngx_event_s {
 
     unsigned         write:1;
 
-    unsigned         accept:1;
+    unsigned         accept:1; /* 标记是否为连接accept事件 */
 
     /* used to detect the stale events in kqueue and epoll */
     unsigned         instance:1;
@@ -46,6 +46,7 @@ struct ngx_event_s {
     unsigned         disabled:1;
 
     /* the ready event; in aio mode 0 means that no operation can be posted */
+	/* 标记事件是否就绪 */
     unsigned         ready:1;
 
     unsigned         oneshot:1; /* edge poll */
@@ -123,6 +124,7 @@ struct ngx_event_s {
     ngx_rbtree_node_t   timer;
 
     /* the posted queue */
+	/* 事件队列节点 */
     ngx_queue_t      queue;
 
 #if 0

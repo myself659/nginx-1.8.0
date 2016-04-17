@@ -18,7 +18,7 @@ static ngx_rbtree_node_t  ngx_event_timer_sentinel;
  * it should not be a problem, because we use the rbtree to find
  * a minimum timer value only
  */
-
+/* 定时器初始化 */
 ngx_int_t
 ngx_event_timer_init(ngx_log_t *log)
 {
@@ -49,7 +49,9 @@ ngx_event_find_timer(void)
     return (ngx_msec_t) (timer > 0 ? timer : 0);
 }
 
-
+/*
+nginx 定时器超时检查处理
+*/
 void
 ngx_event_expire_timers(void)
 {
@@ -79,7 +81,7 @@ ngx_event_expire_timers(void)
         ngx_log_debug2(NGX_LOG_DEBUG_EVENT, ev->log, 0,
                        "event timer del: %d: %M",
                        ngx_event_ident(ev->data), ev->timer.key);
-		/* 删除定时器 */
+		/* 从红黑树 删除定时器 */
         ngx_rbtree_delete(&ngx_event_timer_rbtree, &ev->timer);
 
 #if (NGX_DEBUG)
@@ -89,7 +91,7 @@ ngx_event_expire_timers(void)
 #endif
 		/* 设置事件未起定时器 */
         ev->timer_set = 0;
-
+		/* 设置超时标记位 */
         ev->timedout = 1;
         
 		/* 调用定时器超时处理  */

@@ -9,9 +9,9 @@
 #include <ngx_core.h>
 #include <ngx_event.h>
 
-
-ngx_queue_t  ngx_posted_accept_events;  /* */
-ngx_queue_t  ngx_posted_events;  /* */
+/* 为什么要将accept 连接事件分开出来，而不是放到ngx_posted_events中 */
+ngx_queue_t  ngx_posted_accept_events;  /* accept连接事件  */
+ngx_queue_t  ngx_posted_events;  /* 投递的事件队列  */
 
 
 void
