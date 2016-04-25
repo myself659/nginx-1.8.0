@@ -990,6 +990,7 @@ ngx_conf_set_flag_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_flag_t       *fp;
     ngx_conf_post_t  *post;
 
+	/*   获得是否推送配置标记地址 */
     fp = (ngx_flag_t *) (p + cmd->offset);
 
     if (*fp != NGX_CONF_UNSET) {
@@ -1153,6 +1154,11 @@ ngx_conf_set_num_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/*
+ngx_conf_t *cf       输入的配置项信息
+ngx_command_t *cmd   匹配解析命令处理，包括如何解析配置
+void *conf		 输出解析结果的转义与保存 
+*/
 char *
 ngx_conf_set_size_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1169,7 +1175,7 @@ ngx_conf_set_size_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     value = cf->args->elts;
-	/* 解析配置值 */
+	/* 解析配置值   取数组成员第2元素，第2成员为对应值 */
     *sp = ngx_parse_size(&value[1]);
     if (*sp == (size_t) NGX_ERROR) {
         return "invalid value";

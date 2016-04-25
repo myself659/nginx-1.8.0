@@ -150,8 +150,8 @@ typedef ngx_int_t (*ngx_http_phase_handler_pt)(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph);
 
 struct ngx_http_phase_handler_s {
-    ngx_http_phase_handler_pt  checker;
-    ngx_http_handler_pt        handler; 
+    ngx_http_phase_handler_pt  checker;  /* 阶段检查函数指针  */
+    ngx_http_handler_pt        handler;  /* 阶段处理函数指针  */
     ngx_uint_t                 next;   /* 下一个处理阶段 */
 };
 
@@ -169,17 +169,39 @@ typedef struct {
 
 /* core 配置信息 */
 typedef struct {
+	/**  
+     * 存储所有的ngx_http_core_srv_conf_t，元素的个数等于server块的个数。 ，因为同一个http块命令可以配置多个server 
+     */  
     ngx_array_t                servers;         /* ngx_http_core_srv_conf_t */
 
+	  /**  
+      * 包含所有phase，以及注册的phase handler，这些handler在处理http请求时，  
+      * 会被依次调用，通过ngx_http_phase_handler_t的next字段串联起来组成一个  
+      * 链表。  
+      */   
     ngx_http_phase_engine_t    phase_engine;
 
+	/**  
+     * 以hash存储的所有request header  
+     */  
     ngx_hash_t                 headers_in_hash;
 
+	 /**  
+     * 被索引的nginx变量 ，比如通过rewrite模块的set指令设置的变量，会在这个hash  
+     * 中分配空间，而诸如$http_XXX和$cookie_XXX等内建变量不会在此分配空间。  
+     */  
     ngx_hash_t                 variables_hash;
 
+	/**  
+     * ngx_http_variable_t类型的数组，所有被索引的nginx变量被存储在这个数组中。  
+     * ngx_http_variable_t结构中有属性index，是该变量在这个数组的下标。  
+     */  
     ngx_array_t                variables;       /* ngx_http_variable_t */
     ngx_uint_t                 ncaptures;
 
+	/**  
+     * server names的hash表的允许的最大bucket数量，默认值是512。  
+     */
     ngx_uint_t                 server_names_hash_max_size;
     ngx_uint_t                 server_names_hash_bucket_size;
 
@@ -188,6 +210,10 @@ typedef struct {
 
     ngx_hash_keys_arrays_t    *variables_keys;
 
+	
+    /**  
+       * 监听的所有端口，ngx_http_conf_port_t类型，其中包含socket地址信息。  
+       */    
     ngx_array_t               *ports;
 
     ngx_uint_t                 try_files;       /* unsigned  try_files:1 */
@@ -211,30 +237,34 @@ http {
 
 */
 
+/* */
 typedef struct {
+	
     /* array of the ngx_http_server_name_t, "server_name" directive */
     ngx_array_t                 server_names;
 
     /* server ctx */
+    /* 指向包含它的ngx_http_conf_ctx_t结构，因为在server块命令的回调函数中会重新创建ngx_http_conf_ctx_t结构，
+    但是其中的main_conf结构都是统一的  */
     ngx_http_conf_ctx_t        *ctx;
 
     ngx_str_t                   server_name;
 
-    size_t                      connection_pool_size;  /* 连接池大小 */
+    size_t                      connection_pool_size;  /* connection连接池大小 */
     size_t                      request_pool_size;
     size_t                      client_header_buffer_size;
 
     ngx_bufs_t                  large_client_header_buffers;
 
-    ngx_msec_t                  client_header_timeout;
+    ngx_msec_t                  client_header_timeout; /* 请求超时时间 */
 
     ngx_flag_t                  ignore_invalid_headers;
     ngx_flag_t                  merge_slashes;
     ngx_flag_t                  underscores_in_headers;
 
-    unsigned                    listen:1;
+    unsigned                    listen:1; /* 区别当前server是否监听  */
 #if (NGX_PCRE)
-    unsigned                    captures:1;
+    unsigned                    captures:1; /* 该srv配置的location配置数组 */
 #endif
 
     ngx_http_core_loc_conf_t  **named_locations;
@@ -342,7 +372,7 @@ typedef struct {
     unsigned                   test_dir:1;
 } ngx_http_try_file_t;
 
-/* 应用场景 */
+/* 应用场景 location配置信息 */
 
 struct ngx_http_core_loc_conf_s {
     ngx_str_t     name;          /* location name */
@@ -354,8 +384,9 @@ struct ngx_http_core_loc_conf_s {
     unsigned      noname:1;   /* "if () {}" block or limit_except */
     unsigned      lmt_excpt:1;
     unsigned      named:1;
-
+	/* 是否精确匹配 */
     unsigned      exact_match:1;
+    /* 非正则匹配 */
     unsigned      noregex:1;
 
     unsigned      auto_redirect:1;
@@ -365,7 +396,7 @@ struct ngx_http_core_loc_conf_s {
     unsigned      gzip_disable_degradation:2;
 #endif
 #endif
-
+	/* locations 子树 */
     ngx_http_location_tree_node_t   *static_locations;
 #if (NGX_PCRE)
     ngx_http_core_loc_conf_t       **regex_locations;
@@ -477,8 +508,10 @@ struct ngx_http_core_loc_conf_s {
 
     ngx_uint_t    types_hash_max_size;		/* 表示hash最多有多少bucket  */
     ngx_uint_t    types_hash_bucket_size;   /* 表示每个bucket有多少字节 */
-
-    ngx_queue_t  *locations;
+	/* 
+	ngx_queue_t 包含一个 *prev 和一个 *next 指针，用于构造链表
+	*/
+    ngx_queue_t  *locations;  
 
 #if 0
     ngx_http_core_loc_conf_t  *prev_location;

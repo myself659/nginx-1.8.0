@@ -225,12 +225,12 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         module = ngx_modules[i]->ctx;
 
         if (module->create_conf) {
-            rv = module->create_conf(cycle);
+            rv = module->create_conf(cycle); /* 创建配置 */
             if (rv == NULL) {
                 ngx_destroy_pool(pool);
                 return NULL;
             }
-            cycle->conf_ctx[ngx_modules[i]->index] = rv;
+            cycle->conf_ctx[ngx_modules[i]->index] = rv; /* 保存模块配置到数组 */
         }
     }
 

@@ -1050,7 +1050,7 @@ ngx_core_module_init_conf(ngx_cycle_t *cycle, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        ccf->username = NGX_USER;  /* 未见定义 */
+        ccf->username = NGX_USER;  /*Todo 未见定义 */
         ccf->user = pwd->pw_uid;
 
         ngx_set_errno(0);

@@ -560,8 +560,8 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         n += cmcf->phases[i].handlers.nelts;
 
         for (j = cmcf->phases[i].handlers.nelts - 1; j >=0; j--) {
-            ph->checker = checker;
-            ph->handler = h[j]; 	/* */
+            ph->checker = checker;  /*  设置http检查函数  */
+            ph->handler = h[j]; 	/*  设置各模块的处理函数  */
             ph->next = n;
             ph++;
         }
@@ -852,7 +852,7 @@ ngx_http_init_static_location_trees(ngx_conf_t *cf,
     return NGX_OK;
 }
 
-
+/* 添加location */
 ngx_int_t
 ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
     ngx_http_core_loc_conf_t *clcf)
@@ -894,6 +894,7 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
 
     ngx_queue_init(&lq->list);
 
+	/* 加入父location队列 */
     ngx_queue_insert_tail(*locations, &lq->queue);
 
     return NGX_OK;

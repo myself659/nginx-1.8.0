@@ -39,7 +39,7 @@ server {
 */
 
 typedef struct {
-	
+	/*  main配置信息  */
     void        **main_conf;  
     /* server块配置信息 */
     void        **srv_conf;

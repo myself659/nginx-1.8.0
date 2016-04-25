@@ -837,7 +837,7 @@ ngx_http_core_run_phases(ngx_http_request_t *r)
     ph = cmcf->phase_engine.handlers;
 
     while (ph[r->phase_handler].checker) {
-
+		/* 调用检查，例如 ngx_http_core_content_phase  */
         rc = ph[r->phase_handler].checker(r, &ph[r->phase_handler]);
 
         if (rc == NGX_OK) {
@@ -1001,7 +1001,7 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
         return NGX_OK;
     }
 
-    r->phase_handler++;
+    r->phase_handler++;  /* 加1进入下一阶段  */
     return NGX_AGAIN;
 }
 
@@ -1357,6 +1357,7 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
 
     if (r->content_handler) {
         r->write_event_handler = ngx_http_request_empty_handler;
+        /* 调用handlle处理 */
         ngx_http_finalize_request(r, r->content_handler(r));
         return NGX_OK;
     }
@@ -1401,6 +1402,9 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
 }
 
 
+/*
+更新loc配置 
+*/
 void
 ngx_http_update_location_config(ngx_http_request_t *r)
 {
@@ -1478,7 +1482,7 @@ ngx_http_update_location_config(ngx_http_request_t *r)
     }
 
     if (clcf->handler) {
-        r->content_handler = clcf->handler;
+        r->content_handler = clcf->handler;  /* 重新设置http 处理函数 */
     }
 }
 
@@ -3075,7 +3079,9 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
+	/* 保存父ctx */
     pctx = cf->ctx;
+    /* 从xtx继承server 及main配置  */
     ctx->main_conf = pctx->main_conf;
     ctx->srv_conf = pctx->srv_conf;
 
@@ -3085,7 +3091,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     for (i = 0; ngx_modules[i]; i++) {
-        if (ngx_modules[i]->type != NGX_HTTP_MODULE) {
+        if (ngx_modules[i]->type != NGX_HTTP_MODULE) {/* 忽略非http模块 */
             continue;
         }
 
@@ -3100,34 +3106,38 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
+	/* 获取 模块 ngx_http_core_loc_conf_t  */
     clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];
+    /* 保存当前 loc_conf  */
     clcf->loc_conf = ctx->loc_conf;
 
+	/* 获取location 行解析结果 */
     value = cf->args->elts;
 
+	/* 根据参数个数的不同，来判断location类型 */
     if (cf->args->nelts == 3) {
 
         len = value[1].len;
         mod = value[1].data;
         name = &value[2];
 
-        if (len == 1 && mod[0] == '=') {
+        if (len == 1 && mod[0] == '=') { /* = 表示精确匹配 */
 
             clcf->name = *name;
             clcf->exact_match = 1;
 
-        } else if (len == 2 && mod[0] == '^' && mod[1] == '~') {
+        } else if (len == 2 && mod[0] == '^' && mod[1] == '~') { /* ^~ 开头表示uri以某个常规字符串开头，理解为匹配 url路径即可  */
 
             clcf->name = *name;
             clcf->noregex = 1;
 
-        } else if (len == 1 && mod[0] == '~') {
+        } else if (len == 1 && mod[0] == '~') {/* ~ 开头表示区分大小写的正则匹配 */
 
             if (ngx_http_core_regex_location(cf, clcf, name, 0) != NGX_OK) {
                 return NGX_CONF_ERROR;
             }
 
-        } else if (len == 2 && mod[0] == '~' && mod[1] == '*') {
+        } else if (len == 2 && mod[0] == '~' && mod[1] == '*') { /* ~*  开头表示不区分大小写的正则匹配 */
 
             if (ngx_http_core_regex_location(cf, clcf, name, 1) != NGX_OK) {
                 return NGX_CONF_ERROR;
@@ -3243,6 +3253,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     cf->ctx = ctx;
     cf->cmd_type = NGX_HTTP_LOC_CONF;
 
+	/* 解析location 配置 */
     rv = ngx_conf_parse(cf, NULL);
 
     *cf = save;
