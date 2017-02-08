@@ -1233,13 +1233,13 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
 
     if (module == NULL) {
         for (i = 0; ngx_modules[i]; i++) {
-
+			/* 过滤非事件模块 */
             if (ngx_modules[i]->type != NGX_EVENT_MODULE) {
                 continue;
             }
 
             event_module = ngx_modules[i]->ctx;
-
+			/* 过滤非event_core模块 */
             if (ngx_strcmp(event_module->name->data, event_core_name.data) == 0)
             {
                 continue;

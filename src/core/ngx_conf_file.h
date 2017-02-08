@@ -116,7 +116,7 @@ struct ngx_open_file_s {
 /* ngx 模块化扩展 */
 
 /* 同arp模块子模块管理比较  */
-
+/* nginx 模块，用于模块定制，模块解析   */
 struct ngx_module_s {
 	/* 所属分类标识 */
     ngx_uint_t            ctx_index;
@@ -166,7 +166,7 @@ typedef struct {
     char               *(*init_conf)(ngx_cycle_t *cycle, void *conf); /* 初始化配置 */
 } ngx_core_module_t;
 
-/* */
+/*  配置文件信息  */
 typedef struct {
     ngx_file_t            file;
     ngx_buf_t            *buffer;
@@ -365,7 +365,7 @@ char *ngx_conf_set_bitmask_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 
 extern ngx_uint_t     ngx_max_module;
-extern ngx_module_t  *ngx_modules[];  /* ngx module 信息 */
+extern ngx_module_t  *ngx_modules[];  /* ngx module 信息  模块是如何加入这个数组的 */
 
 
 #endif /* _NGX_CONF_FILE_H_INCLUDED_ */

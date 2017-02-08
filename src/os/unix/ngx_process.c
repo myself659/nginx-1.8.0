@@ -353,7 +353,7 @@ ngx_signal_handler(int signo)
             }
             break;
 
-        case ngx_signal_value(NGX_RECONFIGURE_SIGNAL):
+        case ngx_signal_value(NGX_RECONFIGURE_SIGNAL):/* nginx   -s  reload */
             ngx_reconfigure = 1;
             action = ", reconfiguring";
             break;

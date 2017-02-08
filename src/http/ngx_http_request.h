@@ -298,7 +298,9 @@ typedef struct {
 
 
 typedef struct ngx_http_addr_conf_s  ngx_http_addr_conf_t;
-
+/*
+http 连接需要关注的信息 
+*/
 typedef struct {
     ngx_http_addr_conf_t             *addr_conf;
     ngx_http_conf_ctx_t              *conf_ctx;
@@ -484,7 +486,7 @@ struct ngx_http_request_s {
     ngx_http_cleanup_t               *cleanup;
 
     unsigned                          subrequests:8;  /* */
-    unsigned                          count:8;  	/* */
+    unsigned                          count:8;  	/* 原始请求计数 */
     unsigned                          blocked:8;
 	/* 表示请求使用异步io */
     unsigned                          aio:1;
@@ -580,7 +582,7 @@ struct ngx_http_request_s {
 
 #if (NGX_STAT_STUB)
     unsigned                          stat_reading:1; /* 置1表示开始读请求 */
-    unsigned                          stat_writing:1;
+    unsigned                          stat_writing:1; /* 置1表示开始写请求 */
 #endif
 
     /* used to parse HTTP headers */

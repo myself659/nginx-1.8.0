@@ -26,13 +26,13 @@ typedef struct {
 
 #endif
 
-/* 事件通知  */
+/* 事件通知  事件与连接分开，连接上有多种事件，例如读事件，写事件  */
 struct ngx_event_s {
     void            *data;  /* 事件上下文数据，事件关联数据,如果连接事件，则为ngx_connet_t */
 
     unsigned         write:1;
 
-    unsigned         accept:1; /* 标记是否为连接accept事件 */
+    unsigned         accept:1;
 
     /* used to detect the stale events in kqueue and epoll */
     unsigned         instance:1;
@@ -41,7 +41,7 @@ struct ngx_event_s {
      * the event was passed or would be passed to a kernel;
      * in aio mode - operation was posted.
      */
-    unsigned         active:1;
+    unsigned         active:1;  /* 事件开启 */
 
     unsigned         disabled:1;
 

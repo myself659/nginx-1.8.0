@@ -37,7 +37,7 @@ server {
                 include fastcgi.conf;
                 }	
 */
-
+/* http类型模块配置上下文 */
 typedef struct {
 	/*  main配置信息  */
     void        **main_conf;  
@@ -67,8 +67,8 @@ typedef struct {
 
 #define NGX_HTTP_MAIN_CONF        0x02000000
 #define NGX_HTTP_SRV_CONF         0x04000000
-#define NGX_HTTP_LOC_CONF         0x08000000
-#define NGX_HTTP_UPS_CONF         0x10000000
+#define NGX_HTTP_LOC_CONF         0x08000000  /* location */
+#define NGX_HTTP_UPS_CONF         0x10000000  /*  upstream */
 #define NGX_HTTP_SIF_CONF         0x20000000
 #define NGX_HTTP_LIF_CONF         0x40000000
 #define NGX_HTTP_LMT_CONF         0x80000000

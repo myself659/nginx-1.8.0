@@ -822,7 +822,7 @@ done:
     return NGX_OK;
 }
 
-
+/* ½âÎöhttpÇëÇó  */
 ngx_int_t
 ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
     ngx_uint_t allow_underscores)

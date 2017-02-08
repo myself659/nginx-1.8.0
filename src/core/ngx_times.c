@@ -99,7 +99,7 @@ ngx_time_update(void)
 
     if (tp->sec == sec) {
         tp->msec = msec;
-        ngx_unlock(&ngx_time_lock);
+        ngx_unlock(&ngx_time_lock); /* ±£»¤ cached_time */
         return;
     }
 

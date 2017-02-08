@@ -195,15 +195,15 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * create the main_conf's, the null srv_conf's, and the null loc_conf's
      * of the all http modules
      */
-
+	/* 从所有注册模块查找NGX_HTTP_MODULE */
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
         }
-
+		/* 从nginx模块中取出http模块ctx，完成该模块初始化  */
         module = ngx_modules[m]->ctx;
-        mi = ngx_modules[m]->ctx_index;
-
+        mi = ngx_modules[m]->ctx_index;  /* http类型模块支持子模块，http类型模块的三种类型配置统一管理，ctx_index用于区分子模块 */
+		
         if (module->create_main_conf) {
             ctx->main_conf[mi] = module->create_main_conf(cf);
             if (ctx->main_conf[mi] == NULL) {
@@ -412,7 +412,9 @@ ngx_http_init_phases(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     return NGX_OK;
 }
 
-
+/*
+初始化http head 选项hash
+*/
 static ngx_int_t
 ngx_http_init_headers_in_hash(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 {
@@ -677,7 +679,12 @@ ngx_http_merge_locations(ngx_conf_t *cf, ngx_queue_t *locations,
     return NGX_CONF_OK;
 }
 
+/*
 
+经过配置的读取之后，所有server都被保存在http core模块的main配置中的servers数组中，
+而每个server里面的location都被按配置中出现的顺序保存在http core模块的loc配置的locations队列中，
+对每个server的location进行排序和分类处理
+*/
 static ngx_int_t
 ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_http_core_loc_conf_t *pclcf)
@@ -806,7 +813,9 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     return NGX_OK;
 }
 
-
+/*
+建立location tree 
+*/
 static ngx_int_t
 ngx_http_init_static_location_trees(ngx_conf_t *cf,
     ngx_http_core_loc_conf_t *pclcf)
@@ -824,7 +833,7 @@ ngx_http_init_static_location_trees(ngx_conf_t *cf,
     if (ngx_queue_empty(locations)) {
         return NGX_OK;
     }
-
+	/* 这里也是由于nested location，需要递归一下 */  
     for (q = ngx_queue_head(locations);
          q != ngx_queue_sentinel(locations);
          q = ngx_queue_next(q))
@@ -837,11 +846,14 @@ ngx_http_init_static_location_trees(ngx_conf_t *cf,
             return NGX_ERROR;
         }
     }
-
+	 /* 
+	 join队列中名字相同的inclusive和exact类型location，也就是如果某个exact_match的location名字和普通字符串匹配的location名字相同的话， 
+      就将它们合到一个节点中，分别保存在节点的exact和inclusive下，这一步的目的实际是去重，为后面的建立排序树做准备 
+      */  
     if (ngx_http_join_exact_locations(cf, locations) != NGX_OK) {
         return NGX_ERROR;
     }
-
+	 /*  递归建立location三叉排序树  */ 
     ngx_http_create_locations_list(locations, ngx_queue_head(locations));
 
     pclcf->static_locations = ngx_http_create_locations_tree(cf, locations, 0);
@@ -900,7 +912,9 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
     return NGX_OK;
 }
 
-
+/*
+locations 排序方法 
+*/
 static ngx_int_t
 ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
 {
@@ -1087,7 +1101,7 @@ ngx_http_create_locations_tree(ngx_conf_t *cf, ngx_queue_t *locations,
     ngx_queue_t                    *q, tail;
     ngx_http_location_queue_t      *lq;
     ngx_http_location_tree_node_t  *node;
-
+	/* 根节点为locations队列的中间节点 */  
     q = ngx_queue_middle(locations);
 
     lq = (ngx_http_location_queue_t *) q;
@@ -1110,7 +1124,7 @@ ngx_http_create_locations_tree(ngx_conf_t *cf, ngx_queue_t *locations,
 
     node->len = (u_char) len;
     ngx_memcpy(node->name, &lq->name->data[prefix], len);
-
+	/* 从中间节点开始断开 */  
     ngx_queue_split(locations, q, &tail);
 
     if (ngx_queue_empty(locations)) {
@@ -1120,7 +1134,7 @@ ngx_http_create_locations_tree(ngx_conf_t *cf, ngx_queue_t *locations,
          */
         goto inclusive;
     }
-
+	 /* 从locations左半部分得到左子树 */
     node->left = ngx_http_create_locations_tree(cf, locations, prefix);
     if (node->left == NULL) {
         return NULL;
@@ -1131,7 +1145,7 @@ ngx_http_create_locations_tree(ngx_conf_t *cf, ngx_queue_t *locations,
     if (ngx_queue_empty(&tail)) {
         goto inclusive;
     }
-
+	 /* 从locations右半部分得到右子树 */
     node->right = ngx_http_create_locations_tree(cf, &tail, prefix);
     if (node->right == NULL) {
         return NULL;
@@ -1142,7 +1156,7 @@ inclusive:
     if (ngx_queue_empty(&lq->list)) {
         return node;
     }
-
+	/* 从list队列得到tree子树 */  
     node->tree = ngx_http_create_locations_tree(cf, &lq->list, prefix + len);
     if (node->tree == NULL) {
         return NULL;

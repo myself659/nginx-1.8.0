@@ -36,7 +36,7 @@ typedef void (*ngx_connection_handler_pt)(ngx_connection_t *c);
 
 #define  NGX_OK          0
 #define  NGX_ERROR      -1
-#define  NGX_AGAIN      -2
+#define  NGX_AGAIN      -2  //处理未完成，需要继续或者重新
 #define  NGX_BUSY       -3
 #define  NGX_DONE       -4
 #define  NGX_DECLINED   -5

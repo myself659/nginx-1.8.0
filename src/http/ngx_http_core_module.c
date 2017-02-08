@@ -787,7 +787,7 @@ ngx_http_handler(ngx_http_request_t *r)
     r->connection->log->action = NULL;
 
     r->connection->unexpected_eof = 0;
-
+	/* 根据internal标志判断是否要从定向 */
     if (!r->internal) {
         switch (r->headers_in.connection_type) {
         case 0:
@@ -818,11 +818,34 @@ ngx_http_handler(ngx_http_request_t *r)
     r->gzip_ok = 0;
     r->gzip_vary = 0;
 #endif
-
+	/* 设置请求的写事件hander为ngx_http_core_run_phases，执行ngx_http_core_run_phases方法。 */
     r->write_event_handler = ngx_http_core_run_phases;
     ngx_http_core_run_phases(r);
 }
 
+/*
+不同的 phase，对应不同的 checker 函数
+
+NGX_HTTP_POST_READ_PHASE ngx_http_core_generic_phase
+NGX_HTTP_SERVER_REWRITE_PHASE ngx_http_core_rewrite_phase
+NGX_HTTP_FIND_CONFIG_PHASE ngx_http_core_find_config_phase
+NGX_HTTP_REWRITE_PHASE ngx_http_core_rewrite_phase
+NGX_HTTP_POST_REWRITE_PHASE ngx_http_core_post_rewrite_phase
+NGX_HTTP_PREACCESS_PHASE ngx_http_core_generic_phase
+NGX_HTTP_ACCESS_PHASE ngx_http_core_access_phase
+NGX_HTTP_POST_ACCESS_PHASE ngx_http_core_post_access_phase
+NGX_HTTP_TRY_FILES_PHASE ngx_http_core_try_files_phase
+NGX_HTTP_CONTENT_PHASE ngx_http_core_content_phase
+NGX_HTTP_LOG_PHASE ngx_http_core_generic_phase
+
+
+NGX_OK : 表示该阶段已经处理完成，需要转入下一个阶段
+NG_DECLINED : 表示需要转入本阶段的下一个handler继续处理
+NGX_AGAIN, NGX_DONE : 表示需要等待某个事件发生才能继续处理（比如等待网络IO），此时Nginx为了不阻塞其他请求的处理，
+必须中断当前请求的执行链，等待事件发生之后继续执行该handler
+NGX_ERROR：表示发生了错误，需要结束该请求。
+
+*/
 
 /* 在这个函数中响应http get 请求 */
 void
@@ -1927,7 +1950,7 @@ ngx_http_send_response(ngx_http_request_t *r, ngx_uint_t status,
     return ngx_http_output_filter(r, &out);
 }
 
-
+/* 发送http head */
 ngx_int_t
 ngx_http_send_header(ngx_http_request_t *r)
 {
@@ -1949,7 +1972,7 @@ ngx_http_send_header(ngx_http_request_t *r)
     return ngx_http_top_header_filter(r);
 }
 
-/* 发送 */
+/* 发送http body */
 ngx_int_t
 ngx_http_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {

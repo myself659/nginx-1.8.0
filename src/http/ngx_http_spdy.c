@@ -750,7 +750,7 @@ ngx_http_spdy_send_output_queue(ngx_http_spdy_connection_t *sc)
     }
 
     if (cl) {
-        ngx_add_timer(wev, clcf->send_timeout);
+        ngx_add_timer(wev, clcf->send_timeout); /* Ìí¼Ó¶¨Ê±Æ÷ */ 
 
     } else {
         if (wev->timer_set) {

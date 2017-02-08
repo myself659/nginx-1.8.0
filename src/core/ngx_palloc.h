@@ -58,8 +58,8 @@ struct ngx_pool_s {
     ngx_pool_data_t       d;  /* 描述pool信息 */
     size_t                max; /* 最大可用，不超过NGX_MAX_ALLOC_FROM_POOL */
     ngx_pool_t           *current; /* 当前分配的内存池 */
-    ngx_chain_t          *chain;	/* */
-    ngx_pool_large_t     *large;  	/* 超过通用内存池大小的空间内存链表 */
+    ngx_chain_t          *chain;	/*  */
+    ngx_pool_large_t     *large;  	/* 超过通用内存池大小的空间内存链表,分配大块内存用，即超过max的内存请求 */
     ngx_pool_cleanup_t   *cleanup;  /* 需要指定内存回收函数链表 */
     ngx_log_t            *log; 
 };

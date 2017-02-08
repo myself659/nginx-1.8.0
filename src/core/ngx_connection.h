@@ -35,7 +35,7 @@ struct ngx_listening_s {
 #endif
 
     /* handler of accepted connection */
-    ngx_connection_handler_pt   handler;  /* 当新的tcp连接成功建立后的处理方法  */
+    ngx_connection_handler_pt   handler;  /* 当新的tcp连接成功建立后的处理方法  如ngx_http_init_connection  */
 
     void               *servers;  /* array of ngx_http_in_addr_t, for example */
 
@@ -49,7 +49,7 @@ struct ngx_listening_s {
     ngx_msec_t          post_accept_timeout;
 
     ngx_listening_t    *previous;
-    ngx_connection_t   *connection;
+    ngx_connection_t   *connection; /* 对应侦听建立起来的连接 */
 
     ngx_uint_t          worker;
 
@@ -122,16 +122,16 @@ typedef enum {
 
 /* http连接 */
 struct ngx_connection_s { 
-    void               *data;      /* 连接对应处理业务信息，例如ngx_stream_session_t ngx_http_connection_t */
+    void               *data;      /* 连接对应处理业务信息，例如ngx_stream_session_t ngx_http_connection_t  ngx_http_request_t */
     ngx_event_t        *read;     /* 读事件信息 */
     ngx_event_t        *write;    /* 写事件信息 */
 
     ngx_socket_t        fd;  /* 连接对应fd */
 
-    ngx_recv_pt         recv;  /* 单缓冲区接收函数指针 */
-    ngx_send_pt         send;  /* 单缓冲区发送函数指针 */
-    ngx_recv_chain_pt   recv_chain;  /* 多缓冲区接收函数指针 */
-    ngx_send_chain_pt   send_chain;  /* 多缓冲区发送函数指针 */
+    ngx_recv_pt         recv;  /* 单缓冲区接收函数指针  如 ngx_unix_recv */
+    ngx_send_pt         send;  /* 单缓冲区发送函数指针  如  ngx_unix_send */
+    ngx_recv_chain_pt   recv_chain;  /* 多缓冲区接收函数指针  如 ngx_readv_chain */
+    ngx_send_chain_pt   send_chain;  /* 多缓冲区发送函数指针  如 ngx_linux_sendfile_chain */
 
     ngx_listening_t    *listening;  /* 连接对应侦听信息 */
 
